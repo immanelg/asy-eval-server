@@ -70,6 +70,8 @@ func main() {
 			}
 			// http.ServeFile(w, r, filepath.Join(tmpdir, "output.html"))
 			http.ServeFile(w, r, filepath.Join(tmpdir, "output.svg"))
+		} else {
+			http.NotFound(w, r)
 		}
 	})
 
