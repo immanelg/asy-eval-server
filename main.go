@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"html"
+	// "fmt"
+	// "html"
 	"io"
 	"log"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+		http.ServeFile(w, r, "index.html")
 	})
 
 	http.HandleFunc("/eval", func(w http.ResponseWriter, r *http.Request) {
@@ -60,15 +60,16 @@ func main() {
 				log.Fatal(err)
 			}
 
-			cmd := exec.Command("asy", "input.asy", "-safe", "-f", "html", "-o", "output")
+			// cmd := exec.Command("asy", "input.asy", "-safe", "-f", "html", "-o", "output")
+			cmd := exec.Command("asy", "input.asy", "-safe", "-f", "svg", "-o", "output")
 			cmd.Dir = tmpdir
 			output, err := cmd.CombinedOutput()
 			log.Print("output: ", string(output))
 			if err != nil {
 				log.Fatal(err)
 			}
-			// http.ServeFile(w, r, inpf.Name())
-			http.ServeFile(w, r, filepath.Join(tmpdir, "output.html"))
+			// http.ServeFile(w, r, filepath.Join(tmpdir, "output.html"))
+			http.ServeFile(w, r, filepath.Join(tmpdir, "output.svg"))
 		}
 	})
 

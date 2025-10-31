@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px auto;
+            max-width: 700px;
+            padding: 0 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        textarea#asy-editor {
+            resize: vertical;
+            font-family: monospace;
+            width: 100%;
+            box-sizing: border-box;
+            height: 400px;
+        }
+        textarea#asy-editor:focus {
+            outline: none;
+        }
+        button {
+            display: block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        </style>
+    </head>
+    <body>
+        <h1>Asymptote Evaluator </h1>
+        <!-- Place this tag where you want the button to render. -->
+        <a class="github-button" href="https://github.com/immanelg/asy-eval-server" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star immanelg/asy-eval-server on GitHub">Star</a>
+        <!--<label for="asy-editor">Asy source code:</label>-->
+        <textarea id="asy-editor" placeholder="draw(circle((0,0), 50), blue+2pt);"></textarea>
+        <button disabled onclick="sendeval()">Evaluate</button>
+        <div id="output"></div>
+
+        <script>
+        const textarea = document.getElementById('asy-editor');
+        const button = document.querySelector('button');
+        const outputEl = document.getElementById('output');
+
+        textarea.addEventListener('input', function(event) {
+            if (textarea.value == "") button.disabled = true;
+            else button.disabled = false;
+        });
+        async function sendeval() {
+            const code = textarea.value;
+
+            button.disabled = true;
+            button.textContent = 'Evaluating...';
+            outputEl.textContent = 'Waiting for response...';
+
+            try {
+                const response = await fetch('/eval', {
+                    method: 'POST',
+                    headers: {
+                    },
+                    body: code
+                });
+                outputEl.innerHTML = await response.text();
+
+            } catch (error) {
+                outputEl.textContent = `Error: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Eval...';
+            }
+        }
+
+        document.getElementById('asy-editor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendeval();
+            }
+        });
+        </script>
+    </body>
+</html>
