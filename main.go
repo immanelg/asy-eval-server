@@ -60,13 +60,15 @@ func main() {
 				log.Fatal(err)
 			}
 
-			cmd := exec.Command("asy", "input.asy")
+			cmd := exec.Command("asy", "input.asy", "-safe", "-f", "html", "-o", "output")
 			cmd.Dir = tmpdir
 			output, err := cmd.CombinedOutput()
 			log.Print("output: ", string(output))
 			if err != nil {
 				log.Fatal(err)
 			}
+			// http.ServeFile(w, r, inpf.Name())
+			http.ServeFile(w, r, filepath.Join(tmpdir, "output.html"))
 		}
 	})
 
