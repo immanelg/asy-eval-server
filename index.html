@@ -24,6 +24,8 @@
                 const { code } = this.state;
                 if (code.trim() === "") return;
 
+                localStorage.setItem("code", code);
+
                 if (this.debounceTimer) {
                     clearTimeout(this.debounceTimer);
                 }
@@ -141,31 +143,33 @@ specular = new pen[] {black, white},
 position = new triple[] {-Y+Z, X+Y});
 draw(unitsphere, surfacepen=white);`
             autoidx = 0;
-            autotyping = setTimeout(() => {
-                const next = () => {
-                    if (this.autoidx < this.autocode.length) {
-                        this.setState(prevState => ({
-                            code: prevState.code + this.autocode[this.autoidx],
-                        }));
-                        this.autoidx++;
-                        const delay = 10;
-                        this.autotyping = setTimeout(next, delay);
-                    } else {
-                        document.querySelector("#send-eval").click();
-                    }
-                };
-                next();
-            }, 0);
+            autotyping = null; 
 
             componentDidMount = () => {
-                const textarea = document.getElementById('editor');
-                if (textarea) {
-                    textarea.focus();
+                const code = localStorage.getItem("code");
+                if (code) {
+                    this.setState({ code });
+                    return;
                 }
-            }
 
-            componentWillUnmount = () => {
-                if (this.autotyping) clearTimeout(this.typingInterval);
+                this.autotyping = setTimeout(() => {
+                    const next = () => {
+                        if (this.autoidx < this.autocode.length) {
+                            this.setState(prevState => ({
+                                code: prevState.code + this.autocode[this.autoidx],
+                            }));
+                            this.autoidx++;
+                            const delay = 10;
+                            this.autotyping = setTimeout(next, delay);
+                        } else {
+                            document.querySelector("#send-eval").click();
+                        }
+                    };
+                    next();
+                }, 0);
+
+                const textarea = document.getElementById('editor');
+                if (textarea) textarea.focus();
             }
 
             renderOutput = () => {

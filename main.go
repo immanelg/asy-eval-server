@@ -67,14 +67,19 @@ func main() {
 			// if strings.Contains(accept, "application/pdf") { fmts = append(fmts, "pdf") }
 			// if strings.Contains(accept, "application/svg+xml") { fmts = append(fmts, "svg") }
 			// if strings.Contains(accept, "image/png") { fmts = append(fmts, "png") }
+
 			if strings.Contains(accept, "application/pdf") { fmt = "pdf" 
 			} else if strings.Contains(accept, "application/svg+xml") { fmt = "svg" 
 			} else if strings.Contains(accept, "image/png") { fmt = "png" }
+
 			cmd := exec.Command("asy", "input.asy", "-safe", "-f", fmt, "-o", "output")
 			log.Print("eval command line: ", strings.Join(cmd.Args, " "))
 			cmd.Dir = tmpdir
 			outputb, err := cmd.CombinedOutput()
 			log.Print("output: ", string(outputb))
+
+			outfilepath := filepath.Join(tmpdir, "output."+fmt)
+
 			if err != nil {
 				log.Print("eval error: ", err)
 				// TODO: maybe parse errors to json server side
@@ -82,7 +87,13 @@ func main() {
 				w.WriteHeader(200)
 				w.Write(outputb)
 			} else {
-				http.ServeFile(w, r, filepath.Join(tmpdir, "output."+fmt))
+				if _, err := os.Stat(outfilepath); err != nil {
+					log.Print("cannot stat output file to serve it: ", err)
+					w.Header().Add("Content-Type", "text/vnd.asy-compiler-error")
+					w.WriteHeader(204) // https://http.cat/204
+				} else {
+					http.ServeFile(w, r, outfilepath)
+				}
 			}
 		} else {
 			http.NotFound(w, r)
