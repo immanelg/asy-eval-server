@@ -24,6 +24,7 @@
                 const { code } = this.state;
                 if (code.trim() === "") return;
 
+                window.location.hash = encodeURIComponent(code);
                 localStorage.setItem("code", code);
 
                 if (this.debounceTimer) {
@@ -146,6 +147,16 @@ draw(unitsphere, surfacepen=white);`
             autotyping = null; 
 
             componentDidMount = () => {
+                this.resetdebouncer();
+
+                const textarea = document.getElementById('editor');
+                if (textarea) textarea.focus();
+
+                if (window.location.hash) {
+                    const code = decodeURIComponent(window.location.hash.substring(1));
+                    this.setState({ code });
+                    return;
+                } 
                 const code = localStorage.getItem("code");
                 if (code) {
                     this.setState({ code });
@@ -167,9 +178,6 @@ draw(unitsphere, surfacepen=white);`
                     };
                     next();
                 }, 0);
-
-                const textarea = document.getElementById('editor');
-                if (textarea) textarea.focus();
             }
 
             renderOutput = () => {
