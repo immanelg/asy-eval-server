@@ -1,6 +1,5 @@
 - syntax highlighting 
 - autocomplete 
-- autorun debounce
 - save text in localStorage
 - copy tex code
 - #hash in url to share code
