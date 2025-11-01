@@ -350,47 +350,6 @@ draw(unitsphere, surfacepen=white);`
         </style>
     </head>
     <body>
-        <!-- <h1>Asymptote Evaluator </h1> -->
-        <!-- <a class="github-button" href="https://github.com/immanelg/asy-eval-server" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star immanelg/asy-eval-server on GitHub">Star</a> -->
-        <!-- <textarea id="editor" placeholder="draw(circle((0,0), 50), blue+2pt);"></textarea> -->
-        <!-- <button id="send-eval" disabled=1 onclick="sendeval()">Evaluate</button> -->
-        <!-- <div id="output" class="hidden"></div> -->
-        <!---->
-        <!-- <script> -->
-        <!-- const e = document.querySelector.bind(document);; -->
-        <!-- const editorEl = e('#editor'); -->
-        <!-- const sendButtonEl = e("#send-eval"); -->
-        <!-- const outputEl = e('div#output'); -->
-        <!---->
-        <!-- editorEl.addEventListener('input', e => { sendButtonEl.disabled = editorEl.value.trim() === "" }); -->
-        <!-- editorEl.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter' && !sendButtonEl.disabled) sendeval() } ); -->
-        <!-- async function sendeval() { -->
-        <!--     const code = editorEl.value; -->
-        <!---->
-        <!--     sendButtonEl.disabled = true; -->
-        <!--     sendButtonEl.textContent = 'Evaluating...'; -->
-        <!--     outputEl.classList.remove("hidden"); -->
-        <!--     outputEl.textContent = '...'; -->
-        <!---->
-        <!--     try { -->
-        <!--         const response = await fetch('/eval', { -->
-        <!--             method: 'POST', -->
-        <!--             headers: { -->
-        <!--                 Accept: "image/png", -->
-        <!--             }, -->
-        <!--             body: code -->
-        <!--         }); -->
-        <!--         outputEl.innerHTML = await response.text(); -->
-        <!--     } catch (error) { -->
-        <!--         outputEl.textContent = `HTTP error: ${error.message}`; -->
-        <!--         return; -->
-        <!--     } finally { -->
-        <!--         sendButtonEl.disabled = false; -->
-        <!--         sendButtonEl.textContent = 'Evaluate'; -->
-        <!--     } -->
-        <!-- } -->
-        <!---->
-        <!-- </script> -->
         <div id="app"></div>
     </body>
 </html>
