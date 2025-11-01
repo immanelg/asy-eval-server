@@ -153,6 +153,7 @@ draw(unitsphere, surfacepen=white);`
             autotyping = null; 
             startAutotype = () => {
                 this.autotyping = setTimeout(() => {
+                    this.autoidx = 0;
                     this.setState({code: ""});
                     const next = () => {
                         if (this.autoidx < this.autocode.length) {
@@ -189,7 +190,7 @@ draw(unitsphere, surfacepen=white);`
 
                 let code;
                 const hash = window.location.hash.substring(1);
-                code = hash !== "" ? decodeURIComponent(hash) : localStorage.getItem("code");
+                code = hash !== "" ? decodeURIComponent(hash) : localStorage.getItem("code") || "";
                 this.setState({ code }, () => { 
                     this.saveHash(); 
                     this.saveLocalStorage(); 
