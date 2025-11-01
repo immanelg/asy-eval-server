@@ -67,6 +67,10 @@
                     if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error") {
                         const errmsg = await blob.text();
                         this.setState({status: "err", errmsg });
+                        setTimeout(() => document.getElementById('compiler-error').scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        }), 500);
                     } else {
                         this.setState({status: "ok"});
                         switch (outtype){
@@ -82,6 +86,11 @@
                                 });
                                 break;
                         }
+
+                        setTimeout(() => document.getElementById('output').scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        }), 500);
                     }
                 } catch (error) {
                     this.setState({ output: `Request error: ${error.message}` });
@@ -144,6 +153,7 @@ draw(unitsphere, surfacepen=white);`
             autotyping = null; 
             startAutotype = () => {
                 this.autotyping = setTimeout(() => {
+                    this.setState({code: ""});
                     const next = () => {
                         if (this.autoidx < this.autocode.length) {
                             this.setState(prevState => ({
@@ -262,7 +272,7 @@ draw(unitsphere, surfacepen=white);`
                                 this.setState({ outtype: 'svg' }, () => this.sendEval())
                             }
                         }),
-                        ' SVG'
+                        h("span", null, 'SVG'),
                     ]),
                     h('label', {
                         class: "typeswitch",
@@ -273,7 +283,7 @@ draw(unitsphere, surfacepen=white);`
                             checked: outtype == "png",
                             onChange: () => this.setState({ outtype: 'png' }, () => this.sendEval())
                         }),
-                        ' PNG'
+                        h("span", null, 'PNG'),
                     ]),
 
                     !nothingEverHappened && !loadingOutput && !(status == "err") && [
@@ -303,9 +313,12 @@ draw(unitsphere, surfacepen=white);`
                     }, 'Demo!'),
 
 
-                    !loadingOutput && status === "err" && h("pre", {
+                    !loadingOutput && status === "err" && [
+                        h("p", null, "Compiler error:"),
+                        h("pre", {
                         id: "compiler-error",
                     }, errmsg),
+                    ],
 
 
                     !nothingEverHappened && !loadingOutput && !(status == "err") && h('div', {
@@ -380,13 +393,13 @@ draw(unitsphere, surfacepen=white);`
                 cursor: not-allowed;
             }
         }
-        label {
+        label.typeswitch {
             display: inline-block;
 
             font-size: 16px;
             background-color: hsl(199, 25%, 50%);
 
-            color: rgb(256, 256, 256);
+            color: rgb(255, 255, 255);
 
             margin: auto 10px;
             padding: 10px 20px;
@@ -395,19 +408,19 @@ draw(unitsphere, surfacepen=white);`
             border-radius: 4px;
 
             cursor: pointer;
+
+            &:hover {
+                background-color: hsl(199, 40%, 50%);
+            }
+            & input[type="radio"] {
+                margin-right: 6px;
+            }
+
+            & input[type="radio"]:checked + span {
+                font-weight: bold;
+            }
         }
 
-        label:hover {
-            background-color: hsl(199, 40%, 50%);
-        }
-
-        input[type="radio"] {
-            margin-right: 6px;
-        }
-
-        input[type="radio"]:checked + span {
-            font-weight: bold;
-        }
         button.share {
             font-size: 16px;
             color: rgb(256, 256, 256);
@@ -444,7 +457,12 @@ draw(unitsphere, surfacepen=white);`
             border-radius: 4px;
         }
         pre#compiler-error {
-            border: 4px #ddd;
+            margin: 30px auto;
+            padding: 20px;
+
+            width: 100%;
+
+            border: 4px solid hsl(16, 83.25%, 31%);
             border-radius: 4px;
         }
         .hidden {
