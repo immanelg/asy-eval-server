@@ -14,8 +14,8 @@
                 pngUrl: "",
                 pngBlob: null,
 
-                outputAvailable: false,
                 loadingOutput: false, 
+                nothingEverHappened: true, // no output, but isn't currently loading it either 
 
                 status: null,
                 errmsg: null,
@@ -49,6 +49,7 @@
 
                 this.setState({ 
                     loadingOutput: true, 
+                    nothingEverHappened: false, 
                     //output: '...' 
                     status: null,
                     errmsg: null,
@@ -85,7 +86,7 @@
                 } catch (error) {
                     this.setState({ output: `Request error: ${error.message}` });
                 } finally {
-                    this.setState({ loadingOutput: false, outputAvailable: true });
+                    this.setState({ loadingOutput: false });
                 }
             }
 
@@ -141,6 +142,23 @@ position = new triple[] {-Y+Z, X+Y});
 draw(unitsphere, surfacepen=white);`
             autoidx = 0;
             autotyping = null; 
+            startAutotype = () => {
+                this.autotyping = setTimeout(() => {
+                    const next = () => {
+                        if (this.autoidx < this.autocode.length) {
+                            this.setState(prevState => ({
+                                code: prevState.code + this.autocode[this.autoidx],
+                            }));
+                            this.autoidx++;
+                            const delay = 10;
+                            this.autotyping = setTimeout(next, delay);
+                        } else {
+                            document.querySelector("#send-eval").click();
+                        }
+                    };
+                    next();
+                }, 0);
+            }
 
             onHashChange = () => {
                 const hash = window.location.hash.substring(1);
@@ -154,6 +172,7 @@ draw(unitsphere, surfacepen=white);`
             }
             saveHash = () =>            { window.location.hash = encodeURIComponent(this.state.code); }
             saveLocalStorage = () =>    { localStorage.setItem("code", this.state.code); }
+
             componentDidMount = () => {
                 const textarea = document.getElementById('editor');
                 if (textarea) textarea.focus();
@@ -171,21 +190,6 @@ draw(unitsphere, surfacepen=white);`
 
                 return;
 
-                this.autotyping = setTimeout(() => {
-                    const next = () => {
-                        if (this.autoidx < this.autocode.length) {
-                            this.setState(prevState => ({
-                                code: prevState.code + this.autocode[this.autoidx],
-                            }));
-                            this.autoidx++;
-                            const delay = 10;
-                            this.autotyping = setTimeout(next, delay);
-                        } else {
-                            document.querySelector("#send-eval").click();
-                        }
-                    };
-                    next();
-                }, 0);
             }
             componentWillUnmount = () => {
                 window.removeEventListener('hashchange', this.onHashChange);
@@ -197,21 +201,19 @@ draw(unitsphere, surfacepen=white);`
                 const { svgText, pngUrl, outtype, status } = this.state;
 
                 switch (outtype) {
-                    case "svg":
-                        return h('div', {
-                            id: 'output',
-                            dangerouslySetInnerHTML: { __html: svgText },
-                        });
-                    case "png":
-                        return h('img', {
-                            id: 'output',
-                            src: pngUrl,
-                            alt: 'Asymptote output',
-                            style: { maxWidth: '100%', height: 'auto' }
-                        });
+                case "svg": return h('div', {
+                        id: 'output',
+                        dangerouslySetInnerHTML: { __html: svgText },
+                    });
+                case "png": return h('img', {
+                        id: 'output',
+                        src: pngUrl,
+                        alt: 'Asymptote output',
+                        style: { maxWidth: '100%', height: 'auto' }
+                    });
                 }
             }
-            render({}, { code, svgText, loadingOutput, outputAvailable, outtype, status, errmsg }) {
+            render({}, { code, svgText, loadingOutput, nothingEverHappened, outtype, status, errmsg }) {
                 return h('div', { }, [
                     h('h1', null, 'Asymptote Evaluator'),
 
@@ -258,7 +260,9 @@ draw(unitsphere, surfacepen=white);`
                             type: 'radio',
                             name: 'outtype',
                             checked: outtype == "svg",
-                            onChange: () => this.setState({ outtype: 'svg' })
+                            onChange: () => { 
+                                this.setState({ outtype: 'svg' }, () => this.sendEval())
+                            }
                         }),
                         ' SVG'
                     ]),
@@ -267,13 +271,12 @@ draw(unitsphere, surfacepen=white);`
                             type: 'radio',
                             name: 'outtype',
                             checked: outtype == "png",
-                            onChange: () => this.setState({ outtype: 'png' })
+                            onChange: () => this.setState({ outtype: 'png' }, () => this.sendEval())
                         }),
                         ' PNG'
                     ]),
 
-
-                    outputAvailable && [
+                    !nothingEverHappened && !loadingOutput && [
                         h("button", {
                             class: "share",
                             onClick: e => this.downloadOutput()
@@ -293,11 +296,16 @@ draw(unitsphere, surfacepen=white);`
                             ]
                         })
                     }, "Share"), */
-                        h('div', {
+                        !nothingEverHappened && !loadingOutput && !(status == "err") && h('div', {
                             id: 'output',
                             // dangerouslySetInnerHTML: { __html: this.renderOutput()},
                         }, this.renderOutput()),
-                    ]
+                    ],
+                    h('button', {
+                        class: 'start-demo',
+                        onClick: e => this.startAutotype(),
+                    }, 'Demo!'),
+
                 ]);
             }
         }
@@ -379,6 +387,20 @@ draw(unitsphere, surfacepen=white);`
             cursor: pointer;
 
             background-color: hsl(180, 35%, 35%);
+        }
+        button.start-demo {
+            font-size: 12px;
+            color: rgb(256, 256, 256);
+
+            margin: auto 10px;
+            padding: 10px 20px;
+
+            border: none;
+            border-radius: 4px;
+
+            cursor: pointer;
+
+            background-color: hsl(300, 35%, 35%);
         }
         #output {
             margin: 30px auto;
