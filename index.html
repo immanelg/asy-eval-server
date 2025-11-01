@@ -2,92 +2,395 @@
 <html>
     <head>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <script type="module">
+        import { h, render, Component } from 'https://esm.sh/preact';
+
+        class App extends Component {
+            state = {
+                code: "",
+
+                outtype: "svg",
+                svgText: "",
+                pngUrl: "",
+                pngBlob: null,
+
+                outputAvailable: false,
+                loadingOutput: false, 
+
+                status: null,
+                errmsg: null,
+            };
+
+            contenttype = () => {
+                const { outtype } = this.state;
+                switch (outtype) {
+                    case "svg": return "image/svg+xml";
+                    case "png": return "image/png";
+                    default: throw new Error("invalid type " + outtype);
+                }
+            }
+            sendEval = async () => {
+                const { code, outtype } = this.state;
+                if (code.trim() === "") return;
+
+
+                this.setState({ 
+                    loadingOutput: true, 
+                    //output: '...' 
+                    status: null,
+                    errmsg: null,
+                });
+
+                try {
+                    const response = await fetch('/eval', {
+                        method: 'POST',
+                        headers: {
+                            Accept: this.contenttype(),
+                        },
+                        body: code
+                    });
+                    const blob = await response.blob();
+                    if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error") {
+                        const errmsg = await blob.text();
+                        this.setState({status: "err", errmsg });
+                    } else {
+                        this.setState({status: "ok"});
+                        switch (outtype){
+                            case "svg":
+                                const svgText = await blob.text();
+                                this.setState({ svgText });
+                                break;
+                            case "png":
+                                const pngUrl = URL.createObjectURL(blob);
+                                this.setState({ 
+                                    pngUrl,
+                                    pngBlob: blob
+                                });
+                                break;
+                        }
+                    }
+                } catch (error) {
+                    this.setState({ output: `Request error: ${error.message}` });
+                } finally {
+                    this.setState({ loadingOutput: false, outputAvailable: true });
+                }
+            }
+
+            downloadOutput = () => {
+               const { outtype, svgText, pngBlob } = this.state;
+
+                if (outtype === "svg") {
+                    const blob = new Blob([svgText], { type: 'image/svg+xml' });
+                   const url = URL.createObjectURL(blob);
+                   const a = document.createElement('a');
+                   a.href = url;
+                   a.download = 'asymptote-output.svg';
+                   document.body.appendChild(a);
+                   a.click();
+                   document.body.removeChild(a);
+                   URL.revokeObjectURL(url);
+                } else { // PNG
+                    if (pngBlob) {
+                        const url = URL.createObjectURL(pngBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = "asymptote-output.png";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }
+                }
+            }
+            copyOutputToClipboard = () => {
+                const { svgText, outtype, pngBlob } = this.state;
+
+                switch (outtype) {
+                    case "svg":
+                        navigator.clipboard.writeText(svgText);
+                        return;
+                    case 'png':
+                        if (navigator.clipboard && navigator.clipboard.write) {
+                            const clipboardItem = new ClipboardItem({
+                                [this.contenttype()]: pngBlob
+                            });
+                            navigator.clipboard.write([clipboardItem]);
+                        } else {
+                            alert('Your browser sucks');
+                        }
+                        return;
+                }
+            }
+
+            autocode = `\
+import three;
+size(10cm, 0);
+currentlight = light(diffuse = new pen[] {blue, green},
+specular = new pen[] {black, white},
+position = new triple[] {-Y+Z, X+Y});
+draw(unitsphere, surfacepen=white);`
+            autoidx = 0;
+            autotyping = setTimeout(() => {
+                const next = () => {
+                    if (this.autoidx < this.autocode.length) {
+                        this.setState(prevState => ({
+                            code: prevState.code + this.autocode[this.autoidx],
+                        }));
+                        this.autoidx++;
+                        const delay = 10;
+                        this.autotyping = setTimeout(next, delay);
+                    } else {
+                        document.querySelector("#send-eval").click();
+                    }
+                };
+                next();
+            }, 0);
+
+            componentDidMount = () => {
+                const textarea = document.getElementById('editor');
+                if (textarea) {
+                    textarea.focus();
+                }
+            }
+
+            componentWillUnmount = () => {
+                if (this.autotyping) clearTimeout(this.typingInterval);
+            }
+
+            renderOutput = () => {
+                const { svgText, pngUrl, outtype, status } = this.state;
+
+                switch (outtype) {
+                    case "svg":
+                        return h('div', {
+                            id: 'output',
+                            dangerouslySetInnerHTML: { __html: svgText },
+                        });
+                    case "png":
+                        return h('img', {
+                            id: 'output',
+                            src: pngUrl,
+                            alt: 'Asymptote output',
+                            style: { maxWidth: '100%', height: 'auto' }
+                        });
+                }
+            }
+            render({}, { code, svgText, loadingOutput, outputAvailable, outtype, status, errmsg }) {
+                return h('div', { }, [
+                    h('h1', null, 'Asymptote Evaluator'),
+
+                    h('a', {
+                        class: 'github-button',
+                        href: 'https://github.com/immanelg/asy-eval-server',
+                        'data-color-scheme': 'no-preference: light; light: light; dark: dark;',
+                        'data-size': 'large',
+                        'data-show-count': 'true',
+                        'aria-label': 'Star immanelg/asy-eval-server on GitHub'
+                    }, 'Star'),
+
+                    h('textarea', {
+                        id: 'editor',
+                        // placeholder: 'draw(circle((0,0), 50), blue+2pt);',
+                        value: code,
+                        class: status,
+                        onInput: e => { 
+                            if (this.autotyping) clearTimeout(this.autotyping);
+                            this.setState({ code: e.target.value });
+                        },
+                        onKeyDown: e => {
+                            if (e.ctrlKey && e.key === 'Enter' && this.state.code.trim() !== "") this.sendEval()
+                        },
+
+                    }),
+
+                    status === "err" && h("pre", {}, errmsg),
+
+                    h('button', {
+                        id: 'send-eval',
+                        disabled: (code.trim() === "") || loadingOutput,
+                        onClick: this.sendEval,
+                    }, loadingOutput ? 'Evaluating...' : 'Evaluate'),
+                    h('label', {}, [
+                        h('input', {
+                            type: 'radio',
+                            name: 'outtype',
+                            checked: outtype == "svg",
+                            onChange: () => this.setState({ outtype: 'svg' })
+                        }),
+                        ' SVG'
+                    ]),
+                    h('label', {}, [
+                        h('input', {
+                            type: 'radio',
+                            name: 'outtype',
+                            checked: outtype == "png",
+                            onChange: () => this.setState({ outtype: 'png' })
+                        }),
+                        ' PNG'
+                    ]),
+
+
+                    outputAvailable && [
+                        h("button", {
+                            class: "share",
+                            onClick: e => this.downloadOutput()
+                        }, "Save"),
+                        h("button", {
+                            class: "share",
+                            onClick: e => this.copyOutputToClipboard(),
+                        }, "Copy"),
+                        /* h("button", {
+                        onClick: e => navigator.share({
+                            title: 'Asymptote Image',
+                            text: `Code: ${code}`,
+                            files: [
+                                new File([new Blob([output], { type: 'image/svg+xml' })], 'asymptote-drawing.svg', { 
+                                    type: 'image/svg+xml' 
+                                })
+                            ]
+                        })
+                    }, "Share"), */
+                        h('div', {
+                            id: 'output',
+                            // dangerouslySetInnerHTML: { __html: this.renderOutput()},
+                        }, this.renderOutput()),
+                    ]
+                ]);
+            }
+        }
+
+        render(h(App), document.getElementById("app"));
+        </script>
+
         <style>
         body {
-            font-family: sans-serif;
-            margin: 40px auto;
-            max-width: 700px;
-            padding: 0 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        textarea#asy-editor {
-            resize: vertical;
-            font-family: monospace;
-            width: 100%;
             box-sizing: border-box;
-            height: 400px;
+
+            font-family: sans-serif;
+
+            margin: 40px auto;
+            max-width: 800px;
+            padding: 10px;
         }
-        textarea#asy-editor:focus {
+        textarea#editor {
+            margin: 30px auto;
+
+            padding: 10px;
+
+            resize: vertical;
+
+            font-family: monospace;
+
+            width: 100%;
+            height: 400px;
+
+            border: 4px solid #ddd;
+            border-radius: 4px;
+
+            &.err {
+                border: 4px solid hsl(16, 83.25%, 31%);
+            }
+            &.ok {
+                border: 4px solid hsl(133, 83.25%, 31%);
+            }
+        }
+        textarea#editor:focus {
             outline: none;
         }
-        button {
-            display: block;
-            margin-top: 15px;
+        button#send-eval {
+            font-size: 16px;
+            color: rgb(256, 256, 256);
+
+            margin: auto 10px;
             padding: 10px 20px;
+
             border: none;
             border-radius: 4px;
+
             cursor: pointer;
+
+            background-color: hsl(123, 35%, 35%);
+
+            &:hover {
+                background-color: hsl(123, 51%, 35%);
+            }
+
+            &:disabled {
+                background-color: hsl(100, 0%, 50%);
+            }
+            &:disabled:hover {
+                background-color: hsl(100, 0%, 50%);
+                cursor: not-allowed;
+            }
+        }
+        button.share {
             font-size: 16px;
+            color: rgb(256, 256, 256);
+
+            margin: auto 10px;
+            padding: 10px 20px;
+
+            border: none;
+            border-radius: 4px;
+
+            cursor: pointer;
+
+            background-color: hsl(180, 35%, 35%);
         }
         #output {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
+            margin: 30px auto;
+            padding: 50px;
+
+            border: 4px solid #ddd;
             border-radius: 4px;
+        }
+        .hidden {
+            display: none;
         }
         </style>
     </head>
     <body>
-        <h1>Asymptote Evaluator </h1>
-        <!-- Place this tag where you want the button to render. -->
-        <a class="github-button" href="https://github.com/immanelg/asy-eval-server" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star immanelg/asy-eval-server on GitHub">Star</a>
-        <!--<label for="asy-editor">Asy source code:</label>-->
-        <textarea id="asy-editor" placeholder="draw(circle((0,0), 50), blue+2pt);"></textarea>
-        <button disabled onclick="sendeval()">Evaluate</button>
-        <div id="output"></div>
-
-        <script>
-        const textarea = document.getElementById('asy-editor');
-        const button = document.querySelector('button');
-        const outputEl = document.getElementById('output');
-
-        textarea.addEventListener('input', function(event) {
-            if (textarea.value == "") button.disabled = true;
-            else button.disabled = false;
-        });
-        async function sendeval() {
-            const code = textarea.value;
-
-            button.disabled = true;
-            button.textContent = 'Evaluating...';
-            outputEl.textContent = 'Waiting for response...';
-
-            try {
-                const response = await fetch('/eval', {
-                    method: 'POST',
-                    headers: {
-                    },
-                    body: code
-                });
-                outputEl.innerHTML = await response.text();
-
-            } catch (error) {
-                outputEl.textContent = `Error: ${error.message}`;
-            } finally {
-                button.disabled = false;
-                button.textContent = 'Eval...';
-            }
-        }
-
-        document.getElementById('asy-editor').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                sendeval();
-            }
-        });
-        </script>
+        <!-- <h1>Asymptote Evaluator </h1> -->
+        <!-- <a class="github-button" href="https://github.com/immanelg/asy-eval-server" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star immanelg/asy-eval-server on GitHub">Star</a> -->
+        <!-- <textarea id="editor" placeholder="draw(circle((0,0), 50), blue+2pt);"></textarea> -->
+        <!-- <button id="send-eval" disabled=1 onclick="sendeval()">Evaluate</button> -->
+        <!-- <div id="output" class="hidden"></div> -->
+        <!---->
+        <!-- <script> -->
+        <!-- const e = document.querySelector.bind(document);; -->
+        <!-- const editorEl = e('#editor'); -->
+        <!-- const sendButtonEl = e("#send-eval"); -->
+        <!-- const outputEl = e('div#output'); -->
+        <!---->
+        <!-- editorEl.addEventListener('input', e => { sendButtonEl.disabled = editorEl.value.trim() === "" }); -->
+        <!-- editorEl.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter' && !sendButtonEl.disabled) sendeval() } ); -->
+        <!-- async function sendeval() { -->
+        <!--     const code = editorEl.value; -->
+        <!---->
+        <!--     sendButtonEl.disabled = true; -->
+        <!--     sendButtonEl.textContent = 'Evaluating...'; -->
+        <!--     outputEl.classList.remove("hidden"); -->
+        <!--     outputEl.textContent = '...'; -->
+        <!---->
+        <!--     try { -->
+        <!--         const response = await fetch('/eval', { -->
+        <!--             method: 'POST', -->
+        <!--             headers: { -->
+        <!--                 Accept: "image/png", -->
+        <!--             }, -->
+        <!--             body: code -->
+        <!--         }); -->
+        <!--         outputEl.innerHTML = await response.text(); -->
+        <!--     } catch (error) { -->
+        <!--         outputEl.textContent = `HTTP error: ${error.message}`; -->
+        <!--         return; -->
+        <!--     } finally { -->
+        <!--         sendButtonEl.disabled = false; -->
+        <!--         sendButtonEl.textContent = 'Evaluate'; -->
+        <!--     } -->
+        <!-- } -->
+        <!---->
+        <!-- </script> -->
+        <div id="app"></div>
     </body>
 </html>

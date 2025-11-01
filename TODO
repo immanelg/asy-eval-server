@@ -1,0 +1,7 @@
+- syntax highlighting 
+- autocomplete 
+- autorun debounce
+- save text in localStorage
+- copy/save/share as png/svg/...
+- copy tex code
+- #hash in url to share code

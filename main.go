@@ -3,14 +3,18 @@ package main
 import (
 	// "fmt"
 	// "html"
+	"flag"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
+func compile() {
+}
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
@@ -56,24 +60,38 @@ func main() {
 					log.Fatal(err)
 				}
 			}
-			if err != nil {
-				log.Fatal(err)
-			}
 
-			// cmd := exec.Command("asy", "input.asy", "-safe", "-f", "html", "-o", "output")
-			cmd := exec.Command("asy", "input.asy", "-safe", "-f", "svg", "-o", "output")
+			accept := r.Header.Get("Accept")
+			var fmt string = "svg"
+			// fmts := make([]string, 0, 4)
+			// if strings.Contains(accept, "application/pdf") { fmts = append(fmts, "pdf") }
+			// if strings.Contains(accept, "application/svg+xml") { fmts = append(fmts, "svg") }
+			// if strings.Contains(accept, "image/png") { fmts = append(fmts, "png") }
+			if strings.Contains(accept, "application/pdf") { fmt = "pdf" 
+			} else if strings.Contains(accept, "application/svg+xml") { fmt = "svg" 
+			} else if strings.Contains(accept, "image/png") { fmt = "png" }
+			cmd := exec.Command("asy", "input.asy", "-safe", "-f", fmt, "-o", "output")
+			log.Print("eval command line: ", strings.Join(cmd.Args, " "))
 			cmd.Dir = tmpdir
-			output, err := cmd.CombinedOutput()
-			log.Print("output: ", string(output))
+			outputb, err := cmd.CombinedOutput()
+			log.Print("output: ", string(outputb))
 			if err != nil {
-				log.Fatal(err)
+				log.Print("eval error: ", err)
+				// TODO: maybe parse errors to json server side
+				w.Header().Add("Content-Type", "text/vnd.asy-compiler-error")
+				w.WriteHeader(200)
+				w.Write(outputb)
+			} else {
+				http.ServeFile(w, r, filepath.Join(tmpdir, "output."+fmt))
 			}
-			// http.ServeFile(w, r, filepath.Join(tmpdir, "output.html"))
-			http.ServeFile(w, r, filepath.Join(tmpdir, "output.svg"))
 		} else {
 			http.NotFound(w, r)
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(":5001", nil))
+	var addr = "localhost:5001"
+	flag.StringVar(&addr,"addr", "localhost:5001", "address to use")
+	flag.Parse()
+	log.Print("listening on: ", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
