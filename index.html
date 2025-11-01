@@ -92,27 +92,24 @@
             downloadOutput = () => {
                const { outtype, svgText, pngBlob } = this.state;
 
-                if (outtype === "svg") {
-                    const blob = new Blob([svgText], { type: 'image/svg+xml' });
-                   const url = URL.createObjectURL(blob);
-                   const a = document.createElement('a');
-                   a.href = url;
-                   a.download = 'asymptote-output.svg';
-                   document.body.appendChild(a);
-                   a.click();
-                   document.body.removeChild(a);
-                   URL.revokeObjectURL(url);
-                } else { // PNG
-                    if (pngBlob) {
-                        const url = URL.createObjectURL(pngBlob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = "asymptote-output.png";
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }
+                const downloadFromBlob = (blob, name) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+                switch (outtype) {
+                case "svg": 
+                    downloadFromBlob(new Blob([svgText], { type: 'image/svg+xml' }), "asy.svg");
+                    break;
+                case "png": 
+                    downloadFromBlob(pngBlob, "asy.png");
+                    break;
+
                 }
             }
             copyOutputToClipboard = () => {
@@ -155,6 +152,8 @@ draw(unitsphere, surfacepen=white);`
                     });
                 }
             }
+            saveHash = () =>            { window.location.hash = encodeURIComponent(this.state.code); }
+            saveLocalStorage = () =>    { localStorage.setItem("code", this.state.code); }
             componentDidMount = () => {
                 const textarea = document.getElementById('editor');
                 if (textarea) textarea.focus();
@@ -232,6 +231,7 @@ draw(unitsphere, surfacepen=white);`
                         class: status,
                         onInput: e => { 
                             if (this.autotyping) clearTimeout(this.autotyping);
+
                             this.setState({ code: e.target.value }, () => {
                                 this.saveHash();
                                 this.saveLocalStorage();
