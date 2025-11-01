@@ -20,7 +20,18 @@
                 status: null,
                 errmsg: null,
             };
+            resetdebouncer = () => {
+                const { code } = this.state;
+                if (code.trim() === "") return;
 
+                if (this.debounceTimer) {
+                    clearTimeout(this.debounceTimer);
+                }
+
+                this.debounceTimer = setTimeout(() => {
+                    this.sendEval();
+                }, 1000);
+            }
             contenttype = () => {
                 const { outtype } = this.state;
                 switch (outtype) {
@@ -196,6 +207,7 @@ draw(unitsphere, surfacepen=white);`
                         onInput: e => { 
                             if (this.autotyping) clearTimeout(this.autotyping);
                             this.setState({ code: e.target.value });
+                            this.resetdebouncer();
                         },
                         onKeyDown: e => {
                             if (e.ctrlKey && e.key === 'Enter' && this.state.code.trim() !== "") this.sendEval()
