@@ -80,17 +80,19 @@ func main() {
 
 			outfilepath := filepath.Join(tmpdir, "output."+fmt)
 
+			const compilerErrorMimeType =  "text/vnd.asy-compiler-error"
 			if err != nil {
 				log.Print("eval error: ", err)
 				// TODO: maybe parse errors to json server side
-				w.Header().Add("Content-Type", "text/vnd.asy-compiler-error")
+				w.Header().Add("Content-Type", compilerErrorMimeType)
 				w.WriteHeader(200)
 				w.Write(outputb)
 			} else {
 				if _, err := os.Stat(outfilepath); err != nil {
 					log.Print("cannot stat output file to serve it: ", err)
-					w.Header().Add("Content-Type", "text/vnd.asy-compiler-error")
+					w.Header().Add("Content-Type", compilerErrorMimeType)
 					w.WriteHeader(204) // https://http.cat/204
+					w.Write([]byte("no output"))
 				} else {
 					http.ServeFile(w, r, outfilepath)
 				}

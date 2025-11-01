@@ -22,7 +22,6 @@
             };
             resetdebouncer = () => {
                 const { code } = this.state;
-                if (code.trim() === "") return;
 
                 window.location.hash = encodeURIComponent(code);
                 localStorage.setItem("code", code);
@@ -146,22 +145,32 @@ draw(unitsphere, surfacepen=white);`
             autoidx = 0;
             autotyping = null; 
 
+            onHashChange = () => {
+                const hash = window.location.hash.substring(1);
+                if (hash !== "") {
+                    const code = decodeURIComponent(hash);
+                    this.setState({ code }, () => {
+                        this.saveLocalStorage();
+                        this.resetdebouncer();
+                    });
+                }
+            }
             componentDidMount = () => {
-                this.resetdebouncer();
-
                 const textarea = document.getElementById('editor');
                 if (textarea) textarea.focus();
 
-                if (window.location.hash) {
-                    const code = decodeURIComponent(window.location.hash.substring(1));
-                    this.setState({ code });
-                    return;
-                } 
-                const code = localStorage.getItem("code");
-                if (code) {
-                    this.setState({ code });
-                    return;
-                }
+                let code;
+                const hash = window.location.hash.substring(1);
+                code = hash !== "" ? decodeURIComponent(hash) : localStorage.getItem("code");
+                this.setState({ code }, () => { 
+                    this.saveHash(); 
+                    this.saveLocalStorage(); 
+                    this.resetdebouncer(); 
+                });
+
+                window.addEventListener('hashchange', this.onHashChange);
+
+                return;
 
                 this.autotyping = setTimeout(() => {
                     const next = () => {
@@ -178,6 +187,11 @@ draw(unitsphere, surfacepen=white);`
                     };
                     next();
                 }, 0);
+            }
+            componentWillUnmount = () => {
+                window.removeEventListener('hashchange', this.onHashChange);
+                if (this.debounceTimer) clearTimeout(this.debounceTimer);
+                if (this.autotyping) clearTimeout(this.autotyping);
             }
 
             renderOutput = () => {
@@ -218,8 +232,11 @@ draw(unitsphere, surfacepen=white);`
                         class: status,
                         onInput: e => { 
                             if (this.autotyping) clearTimeout(this.autotyping);
-                            this.setState({ code: e.target.value });
-                            this.resetdebouncer();
+                            this.setState({ code: e.target.value }, () => {
+                                this.saveHash();
+                                this.saveLocalStorage();
+                                this.resetdebouncer();
+                            });
                         },
                         onKeyDown: e => {
                             if (e.ctrlKey && e.key === 'Enter' && this.state.code.trim() !== "") this.sendEval()
@@ -227,7 +244,9 @@ draw(unitsphere, surfacepen=white);`
 
                     }),
 
-                    status === "err" && h("pre", {}, errmsg),
+                    status === "err" && h("pre", {
+                        id: "compiler-error",
+                    }, errmsg),
 
                     h('button', {
                         id: 'send-eval',
@@ -366,6 +385,10 @@ draw(unitsphere, surfacepen=white);`
             padding: 50px;
 
             border: 4px solid #ddd;
+            border-radius: 4px;
+        }
+        pre#compiler-error {
+            border: 4px #ddd;
             border-radius: 4px;
         }
         .hidden {
