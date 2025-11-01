@@ -246,16 +246,14 @@ draw(unitsphere, surfacepen=white);`
 
                     }),
 
-                    status === "err" && h("pre", {
-                        id: "compiler-error",
-                    }, errmsg),
-
                     h('button', {
                         id: 'send-eval',
                         disabled: (code.trim() === "") || loadingOutput,
                         onClick: this.sendEval,
                     }, loadingOutput ? 'Evaluating...' : 'Evaluate'),
-                    h('label', {}, [
+                    h('label', {
+                        class: "typeswitch",
+                    }, [
                         h('input', {
                             type: 'radio',
                             name: 'outtype',
@@ -266,7 +264,9 @@ draw(unitsphere, surfacepen=white);`
                         }),
                         ' SVG'
                     ]),
-                    h('label', {}, [
+                    h('label', {
+                        class: "typeswitch",
+                    }, [
                         h('input', {
                             type: 'radio',
                             name: 'outtype',
@@ -276,7 +276,7 @@ draw(unitsphere, surfacepen=white);`
                         ' PNG'
                     ]),
 
-                    !nothingEverHappened && !loadingOutput && [
+                    !nothingEverHappened && !loadingOutput && !(status == "err") && [
                         h("button", {
                             class: "share",
                             onClick: e => this.downloadOutput()
@@ -296,16 +296,22 @@ draw(unitsphere, surfacepen=white);`
                             ]
                         })
                     }, "Share"), */
-                        !nothingEverHappened && !loadingOutput && !(status == "err") && h('div', {
-                            id: 'output',
-                            // dangerouslySetInnerHTML: { __html: this.renderOutput()},
-                        }, this.renderOutput()),
                     ],
                     h('button', {
                         class: 'start-demo',
                         onClick: e => this.startAutotype(),
                     }, 'Demo!'),
 
+
+                    !loadingOutput && status === "err" && h("pre", {
+                        id: "compiler-error",
+                    }, errmsg),
+
+
+                    !nothingEverHappened && !loadingOutput && !(status == "err") && h('div', {
+                        id: 'output',
+                        // dangerouslySetInnerHTML: { __html: this.renderOutput()},
+                    }, this.renderOutput()),
                 ]);
             }
         }
@@ -374,6 +380,34 @@ draw(unitsphere, surfacepen=white);`
                 cursor: not-allowed;
             }
         }
+        label {
+            display: inline-block;
+
+            font-size: 16px;
+            background-color: hsl(199, 25%, 50%);
+
+            color: rgb(256, 256, 256);
+
+            margin: auto 10px;
+            padding: 10px 20px;
+
+            border: none;
+            border-radius: 4px;
+
+            cursor: pointer;
+        }
+
+        label:hover {
+            background-color: hsl(199, 40%, 50%);
+        }
+
+        input[type="radio"] {
+            margin-right: 6px;
+        }
+
+        input[type="radio"]:checked + span {
+            font-weight: bold;
+        }
         button.share {
             font-size: 16px;
             color: rgb(256, 256, 256);
@@ -389,7 +423,7 @@ draw(unitsphere, surfacepen=white);`
             background-color: hsl(180, 35%, 35%);
         }
         button.start-demo {
-            font-size: 12px;
+            font-size: 16px;
             color: rgb(256, 256, 256);
 
             margin: auto 10px;
