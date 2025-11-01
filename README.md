@@ -1,11 +1,13 @@
 # Simple Asymptote Evaluation Server
 
+API Server:
 ```sh
-go run .
+go run . -addr localhost:8000
 ```
 
+Preact app:
+```sh
+firefox localhost:8000
 ```
-curl -XPOST localhost:5001/eval -d 'write("hello,
-world");'
-```
+
 
