@@ -1,13 +1,14 @@
 package main
 
 import (
-	"sync/atomic"
 	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"sync/atomic"
 )
+
 var slogger *slog.Logger
 
 type slogHandler struct {
@@ -31,6 +32,7 @@ func init() {
 }
 
 var nextReqId atomic.Uint64
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := fmt.Sprintf("%d", nextReqId.Load())

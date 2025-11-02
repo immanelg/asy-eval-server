@@ -89,7 +89,7 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat(outfilepath); err != nil {
 			slogger.WarnContext(r.Context(), "cannot stat output file to serve it", "error", err)
 			w.Header().Add("Content-Type", compilerErrorMimeType)
-			w.WriteHeader(204) // https://http.cat/204
+			w.WriteHeader(200)
 			w.Write([]byte("no output"))
 		} else {
 			http.ServeFile(w, r, outfilepath)
