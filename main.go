@@ -100,12 +100,13 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /", corsMiddleware(loggingMiddleware(http.HandlerFunc(serveHtml))))
-	mux.Handle("POST /eval", corsMiddleware(loggingMiddleware(http.HandlerFunc(handleCompilation))))
+	mux.Handle("GET /", http.HandlerFunc(serveHtml))
+	mux.Handle("POST /eval", http.HandlerFunc(handleCompilation))
 
 	var addr = "localhost:8000"
 	flag.StringVar(&addr, "addr", "localhost:8000", "address to use")
 	flag.Parse()
 	slogger.Info("starting server", "addr", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(addr, corsMiddleware(loggingMiddleware(mux))))
+	// log.Fatal(http.ListenAndServe(addr, mux))
 }
