@@ -175,10 +175,11 @@ draw(unitsphere, surfacepen=white);`
                 const hash = window.location.hash.substring(1);
                 if (hash !== "") {
                     const code = decodeURIComponent(hash);
-                    this.setState({ code }, () => {
-                        this.saveLocalStorage();
-                        this.resetdebouncer();
-                    });
+                    if (this.state.code !== code)
+                        this.setState({ code }, () => {
+                            this.saveLocalStorage();
+                            this.resetdebouncer();
+                        });
                 }
             }
             saveHash = () =>            { window.location.hash = encodeURIComponent(this.state.code); }
@@ -213,11 +214,9 @@ draw(unitsphere, surfacepen=white);`
 
                 switch (outtype) {
                 case "svg": return h('div', {
-                        id: 'output',
                         dangerouslySetInnerHTML: { __html: svgText },
                     });
                 case "png": return h('img', {
-                        id: 'output',
                         src: pngUrl,
                         alt: 'Asymptote output',
                         style: { maxWidth: '100%', height: 'auto' }

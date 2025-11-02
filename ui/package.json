@@ -1,0 +1,29 @@
+{
+  "name": "asy-dumb-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/immanelg/asy-eval-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/immanelg/asy-eval-server/issues"
+  },
+  "homepage": "https://github.com/immanelg/asy-eval-server#readme",
+  "dependencies": {
+    "snabbdom": "^3.6.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+
+}
