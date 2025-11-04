@@ -34,29 +34,27 @@ const run = async () => {
         const { svgText, pngUrl, outputType } = state;
         switch (outputType) {
             case "svg":
-                return h("div", { props: { innerHTML: svgText } },
-                [
-
-            ...(!state.nothingEverHappened && !state.loadingOutput && !(state.status == "err")
-                ? [
-                      h(
-                          "button.share btn",
-                          {
-                              on: { click: downloadOutput },
-                          },
-                          "Save",
-                      ),
-                      h(
-                          "button.btn.share",
-                          {
-                              style: { top: "120px", },
-                              on: { click: copyOutputToClipboard },
-                          },
-                          "Copy",
-                      ),
-                  ]
-                : []),
-                    ]);
+                return h("div", { props: { innerHTML: svgText } }, [
+                    ...(!state.nothingEverHappened && !state.loadingOutput && !(state.status == "err")
+                        ? [
+                              h(
+                                  "button.share btn",
+                                  {
+                                      on: { click: downloadOutput },
+                                  },
+                                  "Save",
+                              ),
+                              h(
+                                  "button.btn.share",
+                                  {
+                                      style: { top: "120px" },
+                                      on: { click: copyOutputToClipboard },
+                                  },
+                                  "Copy",
+                              ),
+                          ]
+                        : []),
+                ]);
             case "png":
                 return h("img", {
                     props: {
@@ -130,7 +128,6 @@ const run = async () => {
 
             outtypeInput("svg"),
             outtypeInput("png"),
-
 
             h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
 
@@ -262,7 +259,7 @@ draw(unitsphere, surfacepen=white);`;
         redraw();
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/eval`, {
+            const response = await fetch(`/api/eval`, {
                 method: "POST",
                 headers: {
                     Accept: contentType(),
@@ -295,7 +292,8 @@ draw(unitsphere, surfacepen=white);`;
             redraw();
             if (state.status != null) {
                 cancelScrollTimer();
-                scrollTimer = setTimeout(() =>
+                scrollTimer = setTimeout(
+                    () =>
                         document.getElementById(state.status === "ok" ? "output" : "compiler-error")!.scrollIntoView({
                             behavior: "smooth",
                             block: "end",
@@ -349,12 +347,18 @@ draw(unitsphere, surfacepen=white);`;
         }
     };
     let autosaveInterval: TimerJob | null = null;
-    const autosaveMs = 3*1000
-    const cancelAutosave = () => {if (autosaveInterval !== null) { clearInterval(autosaveInterval); autosaveInterval = null } }
-    const startAutosave = () => setInterval(() => {
-        saveHash();
-        saveLocalStorage();
-    }, autosaveMs)
+    const autosaveMs = 3 * 1000;
+    const cancelAutosave = () => {
+        if (autosaveInterval !== null) {
+            clearInterval(autosaveInterval);
+            autosaveInterval = null;
+        }
+    };
+    const startAutosave = () =>
+        setInterval(() => {
+            saveHash();
+            saveLocalStorage();
+        }, autosaveMs);
 
     let debounceEvalTimer: TimerJob | null;
     const debounceEvalTimeoutMs = 2 * 1000;

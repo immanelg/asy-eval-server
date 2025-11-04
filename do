@@ -9,30 +9,34 @@ export PATH="$ROOT/ui/node_modules/.bin:$PATH"
 API_ADDR="localhost:8050"
 
 @ui() {
-    export VITE_API_URL="http://${API_ADDR}"
-    cd ui
+    # export VITE_API_URL="http://${API_ADDR}"
+    cd $ROOT/ui
     case "$1" in 
-    watch) vite dev --open ;;
-    run) vite preview --open;;
+    watch) vite dev ;;
+    run) vite preview ;;
     build) tsc && vite build ;;
     check) tsc ;;
     test) exit 0 ;;
     fmt) prettier . --write;;
-    *) echo "unknown subcommand" ;;
+    *) echo "subcommands: watch run build check test fmt..." ;;
     esac
 }
 
 @api() {
-    cd api
+    cd $ROOT/api
     case "$1" in 
-    watch) watchexec -r -e go go run . -addr ${API_ADDR} ;;
+    watch) watchexec -r -e go go run . -addr localhost:8050 ;;
     run) go run . ;;
     build) go build -o api . ;;
-    check) go vet . ;;
+    vet) go vet . ;;
     test) exit 0 ;;
     fmt) go fmt .;;
-    *) echo "unknown subcommand" ;;
+    *) echo "subcommands: watch run build check test fmt" ;;
     esac
+}
+@fmt() {
+    @api fmt
+    @ui fmt
 }
 
 ##################################################################################################
