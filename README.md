@@ -1,22 +1,29 @@
 # Simple Asymptote Evaluation Server
 
-## Docker
-Alpine image for running the API server.
+
+# Running locally
+Build backend and frontend with reloading:
 ```
-docker build -t asy-dumb-server -f Dockerfile .
-```
-```
-docker run  -p 8000:8000 --rm -ti asy-dumb-server
-```
-## Run directly
-API Server:
-```sh
-go run . -addr localhost:8000
+./do ui watch  # opens browser
+./do api watch
 ```
 
-Preact app:
-```sh
-firefox localhost:8000
+# Stack
+API server:
+- Go
+- golang-migrate, SQLite
+- Asymptote and PDFLatex backend
+Client:
+- TypeScript
+- Vite build system
+- Snabbdom for virtual DOM
+Deployment:
+- Docker Compose build for production
+- Caddy as a reverse proxy for serving UI files and API
+
+# Production deployment
+- (optional) TLS and DNS: set up DNS records; in ui/Caddyfile configure hostname and set port 443.
+- Use Docker Compose to deploy:
 ```
-
-
+docker compose up --build -d
+```

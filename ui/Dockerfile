@@ -1,4 +1,4 @@
-FROM node:22-alpine as ui-files
+FROM node:22-alpine AS ui-files
 
 WORKDIR /app
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log/slog"
@@ -9,20 +10,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-func serveHtml(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
-}
-
 func handleCompilation(w http.ResponseWriter, r *http.Request) {
-	// data, err := io.ReadAll(r.Body)
-	// if err != nil {
-	//  logger.ErrorContext(r.Context(), "read body failed", "error", err)
-	// }
-	// expr := string(data)
-	// logger.InfoContext(r.Context(), "expr", "expr", expr)
-
 	tmpdir, err := os.MkdirTemp("", "asy-eval-1")
 	if err != nil {
 		slogger.ErrorContext(r.Context(), "create temp dir failed", "error", err)
@@ -71,7 +62,9 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 		fmt = "png"
 	}
 
-	cmd := exec.Command("asy", "input.asy", "-safe", "-f", fmt, "-o", "output")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second); defer cancel()
+	cmd := exec.CommandContext(ctx, "asy", "input.asy", "-safe", "-f", fmt, "-o", "output")
 	cmd.Dir = tmpdir
 	slogger.InfoContext(r.Context(), "exec asy cmd", "args", cmd.Args)
 
@@ -100,17 +93,15 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /", http.HandlerFunc(serveHtml))
-
 	mux.Handle("POST /eval", http.HandlerFunc(handleCompilation))
 
-	var addr = "localhost:8000"
-	flag.StringVar(&addr, "addr", "localhost:8050", "address to use")
+	var addr string
+	flag.StringVar(&addr, "addr", "0.0.0.0:8080", "address to use")
 	flag.Parse()
 	slogger.Info("starting server", "addr", addr)
 	err := http.ListenAndServe(addr, corsMiddleware(loggingMiddleware(mux)))
 	if err != nil {
-		slog.Error("listen", err)
+		slog.Error("listen", "failed to listen", err)
 	}
 	// log.Fatal(http.ListenAndServe(addr, mux))
 }

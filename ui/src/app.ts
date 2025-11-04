@@ -34,7 +34,29 @@ const run = async () => {
         const { svgText, pngUrl, outputType } = state;
         switch (outputType) {
             case "svg":
-                return h("div", { props: { innerHTML: svgText } });
+                return h("div", { props: { innerHTML: svgText } },
+                [
+
+            ...(!state.nothingEverHappened && !state.loadingOutput && !(state.status == "err")
+                ? [
+                      h(
+                          "button.share btn",
+                          {
+                              on: { click: downloadOutput },
+                          },
+                          "Save",
+                      ),
+                      h(
+                          "button.btn.share",
+                          {
+                               style: { top: "120px", },
+                              on: { click: copyOutputToClipboard },
+                          },
+                          "Copy",
+                      ),
+                  ]
+                : []),
+                    ]);
             case "png":
                 return h("img", {
                     props: {
@@ -84,7 +106,7 @@ const run = async () => {
                     input: onEditorInput,
                     keydown: onHotkey,
                     focus: e => {
-                        cancelScrollToResultTimer();
+                        cancelScrollTimer();
                         (e.target as HTMLTextAreaElement).scrollIntoView({
                             behavior: "smooth",
                             block: "center",
@@ -109,25 +131,6 @@ const run = async () => {
             outtypeInput("svg"),
             outtypeInput("png"),
 
-            ...(!nothingEverHappened && !loadingOutput && !(status == "err")
-                ? [
-                      h(
-                          "button.share btn",
-                          {
-                              on: { click: downloadOutput },
-                          },
-                          "Save",
-                      ),
-                      h(
-                          "button.btn.share",
-                          {
-                              class: { share: true },
-                              on: { click: copyOutputToClipboard },
-                          },
-                          "Copy",
-                      ),
-                  ]
-                : []),
 
             h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
 
@@ -137,7 +140,7 @@ const run = async () => {
                       h(
                           "pre#compiler-error",
                           {
-                              on: {
+                              /* on: {
                                   click: e => {
                                       const selection = window.getSelection();
                                       const range = document.createRange();
@@ -145,7 +148,7 @@ const run = async () => {
                                       selection.removeAllRanges();
                                       selection.addRange(range);
                                   },
-                              },
+                              }, */
                           },
                           errmsg,
                       ),
@@ -204,11 +207,11 @@ draw(unitsphere, surfacepen=white);`;
         }, 0);
     };
 
-    let scrollToResultTimer: TimerJob | null = null;
-    const cancelScrollToResultTimer = () => {
-        if (scrollToResultTimer !== null) {
-            clearTimeout(scrollToResultTimer);
-            scrollToResultTimer = null;
+    let scrollTimer: TimerJob | null = null;
+    const cancelScrollTimer = () => {
+        if (scrollTimer !== null) {
+            clearTimeout(scrollTimer);
+            scrollTimer = null;
         }
     };
 
@@ -226,7 +229,7 @@ draw(unitsphere, surfacepen=white);`;
 
     const onEditorInput = e => {
         if (demoTimer !== null) return; // lock input
-        cancelScrollToResultTimer();
+        cancelScrollTimer();
         state.code = e.target.value;
         debounceEval();
         redraw();
@@ -290,15 +293,16 @@ draw(unitsphere, surfacepen=white);`;
         } finally {
             state.loadingOutput = false;
             redraw();
-            if (state.status != null)
-                scrollToResultTimer = setTimeout(
-                    () =>
+            if (state.status != null) {
+                cancelScrollTimer();
+                scrollTimer = setTimeout(() =>
                         document.getElementById(state.status === "ok" ? "output" : "compiler-error")!.scrollIntoView({
                             behavior: "smooth",
                             block: "end",
                         }),
                     50,
                 );
+            }
         }
     };
 

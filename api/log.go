@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 var slogger *slog.Logger
@@ -43,8 +44,11 @@ func loggingMiddleware(next http.Handler) http.Handler {
 
 		slogger.InfoContext(ctx, "start request", "method", r.Method, "path", r.URL.Path)
 		w.Header().Set("Request-ID", requestID)
-		defer slogger.InfoContext(ctx, "done request")
 
+		t := time.Now()
 		next.ServeHTTP(w, r)
+		elapsed := time.Since(t)
+
+		slogger.InfoContext(ctx, "done request", "elapsed-ms", elapsed.Milliseconds())
 	})
 }

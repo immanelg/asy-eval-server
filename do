@@ -12,7 +12,7 @@ API_ADDR="localhost:8050"
     export VITE_API_URL="http://${API_ADDR}"
     cd ui
     case "$1" in 
-        watch) vite dev --open ;;
+    watch) vite dev --open ;;
     run) vite preview --open;;
     build) tsc && vite build ;;
     check) tsc ;;
