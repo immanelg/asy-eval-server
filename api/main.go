@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -101,12 +101,16 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /", http.HandlerFunc(serveHtml))
+
 	mux.Handle("POST /eval", http.HandlerFunc(handleCompilation))
 
 	var addr = "localhost:8000"
-	flag.StringVar(&addr, "addr", "localhost:8000", "address to use")
+	flag.StringVar(&addr, "addr", "localhost:8050", "address to use")
 	flag.Parse()
 	slogger.Info("starting server", "addr", addr)
-	log.Fatal(http.ListenAndServe(addr, corsMiddleware(loggingMiddleware(mux))))
+	err := http.ListenAndServe(addr, corsMiddleware(loggingMiddleware(mux)))
+	if err != nil {
+		slog.Error("listen", err)
+	}
 	// log.Fatal(http.ListenAndServe(addr, mux))
 }

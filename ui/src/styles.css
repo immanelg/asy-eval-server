@@ -1,6 +1,6 @@
-*, html { 
+*,
+html {
     box-sizing: border-box;
-
 }
 
 ::selection {
@@ -12,7 +12,6 @@ body {
     font-size: 12pt;
     color: #eee;
 
-
     margin: 40px auto;
     max-width: 800px;
     padding: 10px;
@@ -23,10 +22,23 @@ body {
         transform: scale(1.05);
         transition: cubic-bezier(0.165, 0.84, 0.44, 1) 0.2s;
     }
-    transition:  cubic-bezier(0.165, 0.84, 0.44, 1) 1s;
+    transition: cubic-bezier(0.165, 0.84, 0.44, 1) 1s;
 }
 
-body, h1, h2, h3, h4, h5, h6, p, a, span, div, textarea, pre, button {
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+span,
+div,
+textarea,
+pre,
+button {
 }
 
 a:visited {
@@ -65,7 +77,8 @@ pre#compiler-error {
     background-color: rgb(30 30 30);
 }
 
-pre#compiler-error, textarea#editor {
+pre#compiler-error,
+textarea#editor {
     font-family: monospace;
     border: 4px solid hsl(0, 0%, 30%);
     border-radius: 4px;
@@ -102,7 +115,6 @@ textarea#editor:focus {
     border-radius: 4px;
 
     cursor: pointer;
-
 }
 
 button#send-eval {

@@ -1,0 +1,21 @@
+:80 {
+	root * /usr/share/caddy
+	handle_path /api/* {
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        header Access-Control-Allow-Credentials "true"
+
+        @options method OPTIONS
+        handle @options {
+            header Access-Control-Allow-Origin "*"
+            header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+            header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+            header Access-Control-Max-Age "86400"
+            respond 204
+        }
+
+        reverse_proxy api_server:8050 
+    }
+	file_server
+}

@@ -1,0 +1,11 @@
+*
+!src/
+!public/
+!*.json
+!*.html
+!*.css
+!*.ts
+!*.js
+!*.jsx
+!*.html
+!Caddyfile
