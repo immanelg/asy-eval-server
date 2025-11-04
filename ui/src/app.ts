@@ -49,7 +49,7 @@ const run = async () => {
                       h(
                           "button.btn.share",
                           {
-                               style: { top: "120px", },
+                              style: { top: "120px", },
                               on: { click: copyOutputToClipboard },
                           },
                           "Copy",
