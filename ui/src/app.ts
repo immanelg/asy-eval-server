@@ -3,7 +3,7 @@ import { init, classModule, propsModule, styleModule, eventListenersModule, h, t
 
 const env = import.meta.env;
 
-type EvalStatus = null | "ok" | "err" | "network-err";
+type EvalStatus = null | "loading" | "ok" | "err" | "network-err";
 
 type InputType = "asy" | "tex";
 type OutputType = "svg" | "png";
@@ -15,7 +15,6 @@ type State = {
     svgText: string | null;
     pngUrl: string | null;
     pngBlob: Blob | null;
-    loadingOutput: boolean;
     nothingEverHappened: boolean;
     status: EvalStatus;
     errmsg: null | string;
@@ -29,7 +28,6 @@ const run = async () => {
         svgText: "",
         pngUrl: "",
         pngBlob: null,
-        loadingOutput: false,
         nothingEverHappened: true,
         status: null,
         errmsg: null,
@@ -51,7 +49,7 @@ const run = async () => {
     };
 
     const render = (): VNode => {
-        const { code, outputType, loadingOutput, nothingEverHappened, status, errmsg } = state;
+        const { code, outputType, nothingEverHappened, status, errmsg } = state;
 
         const outtypeInput = (type: OutputType): VNode =>
             h("label.btn.typeswitch", {}, [
@@ -102,15 +100,15 @@ const run = async () => {
                 "button#send-eval.btn",
                 {
                     props: {
-                        disabled: code.trim() === "" || loadingOutput,
+                        disabled: code.trim() === "" || status === "loading",
                     },
                     on: {
                         click: sendEval,
                     },
                 },
-                loadingOutput ? "Evaluating..." : "Evaluate",
+                status === "loading" ? "Evaluating..." : "Evaluate",
             ),
-            ...(!state.nothingEverHappened && !state.loadingOutput && state.status === "ok"
+            ...(!nothingEverHappened && status === "ok"
                 ? [
                       h(
                           "button.share btn",
@@ -136,8 +134,7 @@ const run = async () => {
             h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
 
             ...(status === "network-err" ? [h("p", {}, state.errmsg)] : []),
-            // TODO: status == "loading" is better. also all this code is a mess but i dont care really.
-            ...(!loadingOutput && status === "err"
+            ...(status === "err"
                 ? [
                       h("p", {}, "Compiler errors:"),
                       h(
@@ -168,7 +165,7 @@ const run = async () => {
                   ]
                 : []),
 
-            ...(!nothingEverHappened && !loadingOutput && status == "ok" ? [h("div#output", {}, renderOutput())] : []),
+            ...(!nothingEverHappened && status == "ok" ? [h("div#output", {}, renderOutput())] : []),
         ]);
     };
 
@@ -293,16 +290,14 @@ draw(unitsphere, surfacepen=white);`;
 
         cancelEvalTimer();
 
-        state.loadingOutput = true;
+        state.status = "loading" as EvalStatus;
         state.nothingEverHappened = false;
-        state.status = null;
         state.errmsg = null;
         redraw();
 
         await doEvalRequest();
-        state.loadingOutput = false;
         redraw();
-        if (state.status != null) {
+        if (state.status === "ok" || state.status === "err" || state.status === "network-err") {
             cancelScrollTimer();
             scrollTimer = setTimeout(
                 () =>
@@ -429,9 +424,7 @@ draw(unitsphere, surfacepen=white);`;
     let vnode: VNode = undefined;
 
     const redraw = () => {
-        if (env.DEV) {
-            console.debug("redraw", JSON.stringify(state));
-        }
+        if (env.DEV) console.debug("redraw", state);
         vnode = patch(vnode || document.getElementById("app"), render());
     };
 
