@@ -18,27 +18,15 @@ body {
 
     background-color: rgb(10 10 10);
     &:has(textarea#editor:focus) {
+        /* max-width: 1000px; */
         background-color: hsl(0 0% 2%);
-        transform: scale(1.05);
+        /* transform: scale(1.05); */
         transition: cubic-bezier(0.165, 0.84, 0.44, 1) 0.2s;
     }
-    transition: cubic-bezier(0.165, 0.84, 0.44, 1) 1s;
+    transition: cubic-bezier(0.165, 0.84, 0.44, 1) 0.6s;
 }
 
-body,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-a,
-span,
-div,
-textarea,
-pre,
-button {
+body, h1, h2, h3, h4, h5, h6, p, a, span, div, textarea, pre, button {
 }
 
 a:visited {
@@ -49,18 +37,18 @@ a:visited {
 textarea#editor {
     font-size: 11pt;
 
-    margin: 30px auto;
+    margin: 15px auto;
 
     padding: 10px;
 
     resize: vertical;
 
     width: 100%;
-    height: 500px;
+    height: 400px;
 
     background-color: rgb(40, 40, 40);
     &:focus {
-        background-color: rgb(35 35 35);
+        /* background-color: rgb(35 35 35); */
     }
 
     &.err {
@@ -72,7 +60,7 @@ textarea#editor {
 }
 
 pre#compiler-error {
-    margin: 30px auto;
+    margin: 15px auto;
     padding: 20px;
     background-color: rgb(30 30 30);
 }
@@ -93,10 +81,15 @@ textarea#editor:focus {
 }
 
 #output {
+    /* for share panel */
     position: relative;
 
-    margin: 30px auto;
-    padding: 50px;
+    /* image */
+    display: grid;
+    place-items: center;
+
+    margin: 15px auto;
+    padding: 10px 10px;
 
     width: 100%;
 
@@ -105,21 +98,46 @@ textarea#editor:focus {
     background-color: rgb(230 230 230);
 }
 
+
+#eval-panel {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    & .btn {
+        margin: 3px 12px;
+    }
+}
+
+#share-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+
+    & .btn {
+        margin: 5px 12px;
+    }
+}
+
 .btn {
-    display: inline-block;
+    background-color: hsl(194 29% 30%);
 
     font-size: 16px;
+    padding: 8px 20px;
 
-    margin: auto 10px;
-    padding: 10px 20px;
-
-    border: none;
     border-radius: 4px;
+    border: 1.5px solid hsl(0, 0%, 30%);
 
     cursor: pointer;
 }
 
 button#send-eval {
+
     background-color: hsl(122 30% 31%);
 
     &:hover {
@@ -152,10 +170,7 @@ label.typeswitch {
 }
 
 button.share {
-    /* position: absolute; */
-    /* right: 50px; */
-    /* top: 50px; */
-    background-color: hsl(300 28% 31%);
+    background-color: hsl(138 28% 30%);
 }
 
 button#start-demo {

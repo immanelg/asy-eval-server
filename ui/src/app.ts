@@ -1,5 +1,5 @@
 import "./styles.css";
-import { init, classModule, propsModule, styleModule, eventListenersModule, h, type VNode } from "snabbdom";
+import { init, classModule, propsModule, styleModule, eventListenersModule, h, type VNode, fragment } from "snabbdom";
 
 const env = import.meta.env;
 
@@ -10,27 +10,42 @@ type OutputType = "svg" | "png";
 
 type State = {
     code: string;
+
     inputType: InputType;
+
     outputType: OutputType;
     svgText: string | null;
     pngUrl: string | null;
     pngBlob: Blob | null;
-    nothingEverHappened: boolean;
+
     status: EvalStatus;
-    errmsg: null | string;
+    errorMessage: null | string;
+
+    doAutoEval: boolean;
+
+    copyClicked: boolean;
+    saveClicked: boolean;
 };
 
 const run = async () => {
     const state: State = {
         code: "",
+
         inputType: "asy",
+
         outputType: "svg",
+
         svgText: "",
         pngUrl: "",
         pngBlob: null,
-        nothingEverHappened: true,
+
         status: null,
-        errmsg: null,
+        errorMessage: null,
+
+        doAutoEval: true,
+
+        copyClicked: false,
+        saveClicked: false,
     };
 
     const renderOutput = () => {
@@ -43,15 +58,16 @@ const run = async () => {
                     props: {
                         src: pngUrl,
                     },
-                    style: { maxWidth: "100%", height: "auto" },
+                    // style: { maxWidth: "100%", height: "auto" },
                 });
         }
     };
 
     const render = (): VNode => {
-        const { code, outputType, nothingEverHappened, status, errmsg } = state;
+        const { code, outputType, status, errorMessage, 
+            copyClicked, saveClicked, doAutoEval } = state;
 
-        const outtypeInput = (type: OutputType): VNode =>
+        const outputTypeChoice = (type: OutputType): VNode =>
             h("label.btn.typeswitch", {}, [
                 h("input", {
                     props: {
@@ -67,15 +83,7 @@ const run = async () => {
         return h("div", {}, [
             h("h1", {}, "Asymptote Evaluator"),
 
-            h(
-                "a",
-                {
-                    props: {
-                        href: "https://github.com/immanelg/asy-eval-server",
-                    },
-                },
-                "Star me on GitHub ⭐",
-            ),
+            h("a", { props: { href: "https://github.com/immanelg/asy-eval-server" } }, "Star me on GitHub ⭐"),
 
             h("textarea#editor", {
                 props: {
@@ -87,87 +95,78 @@ const run = async () => {
                     input: onEditorInput,
                     keydown: onHotkey,
                     focus: e => {
-                        cancelScrollTimer();
-                        (e.target as HTMLTextAreaElement).scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                        });
+                        scrollToElement(e.target);
                     },
                 },
             }),
 
-            h(
-                "button#send-eval.btn",
-                {
+            h("div#eval-panel", {}, [
+                h("button#send-eval.btn", {
                     props: {
                         disabled: code.trim() === "" || status === "loading",
                     },
                     on: {
                         click: sendEval,
                     },
-                },
-                status === "loading" ? "Evaluating..." : "Evaluate",
-            ),
-            ...(!nothingEverHappened && status === "ok"
-                ? [
-                      h(
-                          "button.share btn",
-                          {
-                              on: { click: downloadOutput },
-                          },
-                          "Save",
-                      ),
-                      h(
-                          "button.btn.share",
-                          {
-                              style: { top: "120px" },
-                              on: { click: copyOutputToClipboard },
-                          },
-                          "Copy",
-                      ),
-                  ]
-                : []),
+                }, status === "loading" ? "Evaluating..." : "Evaluate"),
+                outputTypeChoice("svg"),
+                outputTypeChoice("png"),
+                h("label.btn.autoEval", {}, [
+                    h("input", {
+                        props: {
+                            type: "checkbox",
+                            name: "autoEval",
+                            checked: doAutoEval,
+                        },
+                        on: { change: toggleAutoEval },
+                    }),
+                    h("span", {}, "Auto-eval"),
+                ]),
+                h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
 
-            outtypeInput("svg"),
-            outtypeInput("png"),
+            ]),
 
-            h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
-
-            ...(status === "network-err" ? [h("p", {}, state.errmsg)] : []),
-            ...(status === "err"
-                ? [
-                      h("p", {}, "Compiler errors:"),
-                      h(
-                          "pre#compiler-error",
-                          {
-                              /* on: {
-                                  click: e => {
-                                      const selection = window.getSelection();
-                                      const range = document.createRange();
-                                      range.selectNodeContents(e.target);
-                                      selection.removeAllRanges();
-                                      selection.addRange(range);
-                                  },
-                              }, */
-                          },
-                          errmsg,
-                      ),
-                      h("p", {}, "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial:"),
-                      h(
-                          "a",
-                          {
-                              props: {
-                                  href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf",
+            ...(status === "network-err" ? [ h("pre#network-err", {}, state.errorMessage) ] : []),
+            ...(status === "err" ? [
+                  h("p", {}, "Compiler errors:"),
+                  h("pre#compiler-error", {
+                          /* on: {
+                              click: e => {
+                                  const selection = window.getSelection();
+                                  const range = docOneument.createRange();
+                                  range.selectNodeContents(e.target);
+                                  selection.removeAllRanges();
+                                  selection.addRange(range);
                               },
-                          },
-                          "Tutorial",
-                      ),
-                  ]
-                : []),
+                          }, */
+                      }, errorMessage),
+                  h("p", {}, [
+                    "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial: ",
+                    h("a", { props: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
+                ]),
+            ] : []),
 
-            ...(!nothingEverHappened && status == "ok" ? [h("div#output", {}, renderOutput())] : []),
+            // the syntax iS REALLY ugly and annoying now.....
+            ...(status == "ok" ? [h("div#output", {}, [
+                    renderOutput(),
+                    ...(status === "ok" ? [
+                        h("div.#share-panel", {}, [
+                            h( "button.btn.share", { on: { click: downloadOutput        } }, saveClicked ? "Saved!" : "Save"),
+                            h( "button.btn.share", { on: { click: copyOutputToClipboard } }, copyClicked ? "Copied!" : "Copy"),
+                        ])
+                    ] : []),
+                ]),
+            ] : []),
         ]);
     };
+
+    const scrollToElement = (el) => {
+        if (typeof el === "string") el = document.querySelector(el)!;
+        el.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+        });
+    }
 
     type TimerJob = number;
     let demoTimer: TimerJob | null = null;
@@ -181,6 +180,9 @@ position = new triple[] {-Y+Z, X+Y});
 draw(unitsphere, surfacepen=white);`;
 
     const startDemo = () => {
+        scrollToElement("#editor");
+
+        cancelAutoEval();
         demoTimer = setTimeout(() => {
             demoCodeIdx = 0;
             state.code = "";
@@ -188,25 +190,17 @@ draw(unitsphere, surfacepen=white);`;
             const next = () => {
                 if (demoCodeIdx < demoCode.length) {
                     state.code += demoCode[demoCodeIdx];
+                    redraw();
                     demoCodeIdx++;
-                    const delay = 10;
+                    const delay = 20;
                     demoTimer = setTimeout(next, delay);
                 } else {
                     demoTimer = null;
-                    document.querySelector("#send-eval").click();
+                    (document.querySelector("#send-eval") as HTMLButtonElement).click();
                 }
-                redraw();
             };
             next();
         }, 0);
-    };
-
-    let scrollTimer: TimerJob | null = null;
-    const cancelScrollTimer = () => {
-        if (scrollTimer !== null) {
-            clearTimeout(scrollTimer);
-            scrollTimer = null;
-        }
     };
 
     const contentType = () => {
@@ -223,9 +217,15 @@ draw(unitsphere, surfacepen=white);`;
 
     const onEditorInput = e => {
         if (demoTimer !== null) return; // lock input
-        cancelScrollTimer();
         state.code = e.target.value;
-        debounceEval();
+        if (state.doAutoEval) debounceAutoEval();
+        redraw();
+    };
+
+    const toggleAutoEval = e => {
+        if (state.doAutoEval) cancelAutoEval();
+        else debounceAutoEval();
+        state.doAutoEval = !state.doAutoEval;
         redraw();
     };
 
@@ -256,19 +256,19 @@ draw(unitsphere, surfacepen=white);`;
             });
         } catch (exception) {
             state.status = "network-err";
-            state.errmsg = `I caught an exception while performing an HTTP request.\n${exc}`;
+            state.errorMessage = `I caught an exception while performing an HTTP request.\n${exc}`;
             return;
         }
         if (!response.ok) {
             state.status = "network-err";
-            state.errmsg = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
+            state.errorMessage = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
             return;
         }
 
         const blob = await response.blob();
         if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error") {
             state.status = "err";
-            state.errmsg = await blob.text();
+            state.errorMessage = await blob.text();
             return;
         }
 
@@ -288,32 +288,24 @@ draw(unitsphere, surfacepen=white);`;
     const sendEval = async () => {
         if (state.code.trim() === "") return;
 
-        cancelEvalTimer();
+        cancelAutoEval();
 
         state.status = "loading" as EvalStatus;
-        state.nothingEverHappened = false;
-        state.errmsg = null;
+        state.errorMessage = null;
         redraw();
 
         await doEvalRequest();
         redraw();
-        if (state.status === "ok" || state.status === "err" || state.status === "network-err") {
-            cancelScrollTimer();
-            scrollTimer = setTimeout(
-                () =>
-                    document.getElementById(state.status === "ok" ? "output" : "compiler-error")!.scrollIntoView({
-                        behavior: "smooth",
-                        block: "end",
-                    }),
-                50,
-            );
-        }
+        if (state.status === "ok") scrollToElement("#output");
+        else if (state.status === "err") scrollToElement("#compiler-error");
     };
 
     const downloadOutput = () => {
+        state.saveClicked = true;
+        redraw();
         const { outputType, svgText, pngBlob } = state;
 
-        const downloadFromBlob = (blob, name) => {
+        const downloadFromBlob = (blob: Blob, name: string): void => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -325,15 +317,17 @@ draw(unitsphere, surfacepen=white);`;
         };
         switch (outputType) {
             case "svg":
-                downloadFromBlob(new Blob([svgText], { type: "image/svg+xml" }), "asy.svg");
+                downloadFromBlob(new Blob([svgText!], { type: "image/svg+xml" }), "asy.svg");
                 break;
             case "png":
-                downloadFromBlob(pngBlob, "asy.png");
+                downloadFromBlob(pngBlob!, "asy.png");
                 break;
         }
     };
 
     const copyOutputToClipboard = () => {
+        state.copyClicked = true;
+        redraw();
         const { svgText, outputType, pngBlob } = state;
 
         switch (outputType) {
@@ -368,14 +362,14 @@ draw(unitsphere, surfacepen=white);`;
 
     let debounceEvalTimer: TimerJob | null;
     const debounceEvalTimeoutMs = 2 * 1000;
-    const cancelEvalTimer = () => {
+    const cancelAutoEval = () => {
         if (debounceEvalTimer !== null) {
             clearTimeout(debounceEvalTimer);
             debounceEvalTimer = null;
         }
     };
-    const debounceEval = () => {
-        cancelEvalTimer();
+    const debounceAutoEval = () => {
+        cancelAutoEval();
 
         debounceEvalTimer = setTimeout(() => {
             sendEval();
@@ -414,7 +408,7 @@ draw(unitsphere, surfacepen=white);`;
         const code = loadFromHash();
         if (state.code !== code) {
             state.code = code;
-            debounceEval();
+            if (state.doAutoEval) debounceAutoEval();
             redraw();
         }
     });
@@ -432,7 +426,7 @@ draw(unitsphere, surfacepen=white);`;
 
     redraw();
 
-    debounceEval();
+    if (state.doAutoEval) debounceAutoEval();
     startAutosave();
 
     // const textarea = document.getElementById('editor');

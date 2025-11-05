@@ -12,12 +12,14 @@ API_ADDR="localhost:8050"
     # export VITE_API_URL="http://${API_ADDR}"
     cd $ROOT/ui
     case "$1" in 
-    watch) vite dev ;;
+    i*) npm install ;;
+    w*) vite dev ;;
+    b*) tsc && vite build ;;
+    npm) npm "$@" ;;
     run) vite preview ;;
-    build) tsc && vite build ;;
     check) tsc ;;
     test) exit 0 ;;
-    fmt) prettier . --write;;
+    f*) prettier . --write;;
     *) echo "subcommands: watch run build check test fmt..." ;;
     esac
 }
@@ -25,12 +27,12 @@ API_ADDR="localhost:8050"
 @api() {
     cd $ROOT/api
     case "$1" in 
-    watch) watchexec -r -e go go run . -addr localhost:8050 ;;
+    w*) watchexec -r -e go go run . -addr localhost:8050 ;;
+    b*) go build -o api . ;;
     run) go run . ;;
-    build) go build -o api . ;;
     vet) go vet . ;;
     test) exit 0 ;;
-    fmt) go fmt .;;
+    f*) go fmt .;;
     *) echo "subcommands: watch run build check test fmt" ;;
     esac
 }
