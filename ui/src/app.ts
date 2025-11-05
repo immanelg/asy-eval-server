@@ -1,14 +1,16 @@
 import "./styles.css";
 import { init, classModule, propsModule, styleModule, eventListenersModule, h, type VNode } from "snabbdom";
 
-type EvalStatus = null | "ok" | "err";
+const env = import.meta.env;
+
+type EvalStatus = null | "ok" | "err" | "network-err";
 
 type InputType = "asy" | "tex";
 type OutputType = "svg" | "png";
 
 type State = {
     code: string;
-    inputType: InputType,
+    inputType: InputType;
     outputType: OutputType;
     svgText: string | null;
     pngUrl: string | null;
@@ -37,27 +39,7 @@ const run = async () => {
         const { svgText, pngUrl, outputType } = state;
         switch (outputType) {
             case "svg":
-                return h("div", { props: { innerHTML: svgText } }, [
-                    ...(!state.nothingEverHappened && !state.loadingOutput && !(state.status == "err")
-                        ? [
-                              h(
-                                  "button.share btn",
-                                  {
-                                      on: { click: downloadOutput },
-                                  },
-                                  "Save",
-                              ),
-                              h(
-                                  "button.btn.share",
-                                  {
-                                      style: { top: "120px" },
-                                      on: { click: copyOutputToClipboard },
-                                  },
-                                  "Copy",
-                              ),
-                          ]
-                        : []),
-                ]);
+                return h("div", { props: { innerHTML: svgText } });
             case "png":
                 return h("img", {
                     props: {
@@ -68,10 +50,10 @@ const run = async () => {
         }
     };
 
-    const render = () => {
+    const render = (): VNode => {
         const { code, outputType, loadingOutput, nothingEverHappened, status, errmsg } = state;
 
-        const outtypeInput = type =>
+        const outtypeInput = (type: OutputType): VNode =>
             h("label.btn.typeswitch", {}, [
                 h("input", {
                     props: {
@@ -102,7 +84,7 @@ const run = async () => {
                     id: "editor",
                     value: code,
                 },
-                class: { [status]: true },
+                class: { [status as string]: true },
                 on: {
                     input: onEditorInput,
                     keydown: onHotkey,
@@ -128,12 +110,33 @@ const run = async () => {
                 },
                 loadingOutput ? "Evaluating..." : "Evaluate",
             ),
+            ...(!state.nothingEverHappened && !state.loadingOutput && state.status === "ok"
+                ? [
+                      h(
+                          "button.share btn",
+                          {
+                              on: { click: downloadOutput },
+                          },
+                          "Save",
+                      ),
+                      h(
+                          "button.btn.share",
+                          {
+                              style: { top: "120px" },
+                              on: { click: copyOutputToClipboard },
+                          },
+                          "Copy",
+                      ),
+                  ]
+                : []),
 
             outtypeInput("svg"),
             outtypeInput("png"),
 
             h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
 
+            ...(status === "network-err" ? [h("p", {}, state.errmsg)] : []),
+            // TODO: status == "loading" is better. also all this code is a mess but i dont care really.
             ...(!loadingOutput && status === "err"
                 ? [
                       h("p", {}, "Compiler errors:"),
@@ -152,11 +155,7 @@ const run = async () => {
                           },
                           errmsg,
                       ),
-                      h(
-                          "p",
-                          {},
-                          "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial:",
-                      ),
+                      h("p", {}, "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial:"),
                       h(
                           "a",
                           {
@@ -169,9 +168,7 @@ const run = async () => {
                   ]
                 : []),
 
-            ...(!nothingEverHappened && !loadingOutput && !(status == "err")
-                ? [h("div#output", {}, renderOutput())]
-                : []),
+            ...(!nothingEverHappened && !loadingOutput && status == "ok" ? [h("div#output", {}, renderOutput())] : []),
         ]);
     };
 
@@ -249,9 +246,50 @@ draw(unitsphere, surfacepen=white);`;
         sendEval();
     };
 
+    const doEvalRequest = async () => {
+        const { inputType, outputType } = state;
+        let response;
+        try {
+            response = await fetch(`/api/eval?i=${inputType}&o=${outputType}`, {
+                method: "POST",
+                headers: {
+                    // Accept: contentType(),
+                },
+                body: state.code,
+            });
+        } catch (exception) {
+            state.status = "network-err";
+            state.errmsg = `I caught an exception while performing an HTTP request.\n${exc}`;
+            return;
+        }
+        if (!response.ok) {
+            state.status = "network-err";
+            state.errmsg = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
+            return;
+        }
+
+        const blob = await response.blob();
+        if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error") {
+            state.status = "err";
+            state.errmsg = await blob.text();
+            return;
+        }
+
+        state.status = "ok";
+        switch (outputType) {
+            case "svg":
+                const svgText = await blob.text();
+                state.svgText = svgText;
+                break;
+            case "png":
+                const pngUrl = URL.createObjectURL(blob);
+                state.pngUrl = pngUrl;
+                state.pngBlob = blob;
+                break;
+        }
+    };
     const sendEval = async () => {
-        const { code, outputType, inputType } = state;
-        if (code.trim() === "") return;
+        if (state.code.trim() === "") return;
 
         cancelEvalTimer();
 
@@ -261,49 +299,19 @@ draw(unitsphere, surfacepen=white);`;
         state.errmsg = null;
         redraw();
 
-        try {
-            const response = await fetch(`/api/eval?i=${inputType}&o=${outputType}`, {
-                method: "POST",
-                headers: {
-                    // Accept: contentType(),
-                },
-                body: state.code,
-            });
-            const blob = await response.blob();
-            if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error") {
-                state.status = "err";
-                state.errmsg = await blob.text();
-            } else {
-                state.status = "ok";
-                switch (outputType) {
-                    case "svg":
-                        const svgText = await blob.text();
-                        state.svgText = svgText;
-                        break;
-                    case "png":
-                        const pngUrl = URL.createObjectURL(blob);
-                        state.pngUrl = pngUrl;
-                        state.pngBlob = blob;
-                        break;
-                }
-            }
-        } catch (exc) {
-            state.status = "err";
-            state.errmsg = `Just kidding, there's no compiler error;\nI caught an exception while performing an HTTP request.\n${exc}`;
-        } finally {
-            state.loadingOutput = false;
-            redraw();
-            if (state.status != null) {
-                cancelScrollTimer();
-                scrollTimer = setTimeout(
-                    () =>
-                        document.getElementById(state.status === "ok" ? "output" : "compiler-error")!.scrollIntoView({
-                            behavior: "smooth",
-                            block: "end",
-                        }),
-                    50,
-                );
-            }
+        await doEvalRequest();
+        state.loadingOutput = false;
+        redraw();
+        if (state.status != null) {
+            cancelScrollTimer();
+            scrollTimer = setTimeout(
+                () =>
+                    document.getElementById(state.status === "ok" ? "output" : "compiler-error")!.scrollIntoView({
+                        behavior: "smooth",
+                        block: "end",
+                    }),
+                50,
+            );
         }
     };
 
@@ -421,7 +429,9 @@ draw(unitsphere, surfacepen=white);`;
     let vnode: VNode = undefined;
 
     const redraw = () => {
-        console.debug("redraw");
+        if (env.DEV) {
+            console.debug("redraw", JSON.stringify(state));
+        }
         vnode = patch(vnode || document.getElementById("app"), render());
     };
 

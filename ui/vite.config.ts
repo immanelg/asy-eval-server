@@ -1,15 +1,15 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from "vite";
 
-export default defineConfig(({mode}) => {
+export default defineConfig(({ mode }) => {
     return {
         server: {
             proxy: {
-                '/api': {
-                    target: 'http://localhost:8050/',
+                "/api": {
+                    target: "http://localhost:8050/",
                     changeOrigin: true,
-                    rewrite: (path) => path.replace(/^\/api/, ''),
+                    rewrite: path => path.replace(/^\/api/, ""),
                 },
             },
         },
     };
-})
+});
