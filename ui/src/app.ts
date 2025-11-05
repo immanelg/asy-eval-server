@@ -3,10 +3,12 @@ import { init, classModule, propsModule, styleModule, eventListenersModule, h, t
 
 type EvalStatus = null | "ok" | "err";
 
+type InputType = "asy" | "tex";
 type OutputType = "svg" | "png";
 
 type State = {
     code: string;
+    inputType: InputType,
     outputType: OutputType;
     svgText: string | null;
     pngUrl: string | null;
@@ -20,6 +22,7 @@ type State = {
 const run = async () => {
     const state: State = {
         code: "",
+        inputType: "asy",
         outputType: "svg",
         svgText: "",
         pngUrl: "",
@@ -247,7 +250,7 @@ draw(unitsphere, surfacepen=white);`;
     };
 
     const sendEval = async () => {
-        const { code, outputType } = state;
+        const { code, outputType, inputType } = state;
         if (code.trim() === "") return;
 
         cancelEvalTimer();
@@ -259,10 +262,10 @@ draw(unitsphere, surfacepen=white);`;
         redraw();
 
         try {
-            const response = await fetch(`/api/eval`, {
+            const response = await fetch(`/api/eval?i=${inputType}&o=${outputType}`, {
                 method: "POST",
                 headers: {
-                    Accept: contentType(),
+                    // Accept: contentType(),
                 },
                 body: state.code,
             });
@@ -415,7 +418,7 @@ draw(unitsphere, surfacepen=white);`;
 
     const patch = init([classModule, propsModule, styleModule, eventListenersModule]);
 
-    let vnode: VNode | null = null;
+    let vnode: VNode = undefined;
 
     const redraw = () => {
         console.debug("redraw");
