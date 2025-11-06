@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "dev": "echo 'run: ../do ui watch' && exit 1"
+        "vite": "vite",
+        "build": "vite build"
     },
     "repository": {
         "type": "git",
