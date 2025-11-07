@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -36,8 +37,10 @@ var nextReqId atomic.Uint64
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestID := fmt.Sprintf("%d", nextReqId.Load())
-		nextReqId.Add(1)
+		// requestID := fmt.Sprintf("%d", nextReqId.Load())
+		// nextReqId.Add(1)
+
+		requestID := strconv.Itoa(rand.Int())
 
 		ctx := context.WithValue(r.Context(), contextKeyRequestID, requestID)
 		r = r.WithContext(ctx)

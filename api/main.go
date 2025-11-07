@@ -66,86 +66,48 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// accept := r.Header.Get("Accept")
-	// var fmt string = "svg"
-
-	// if strings.Contains(accept, "application/pdf") {
-	// 	ofmt = "pdf"
-	// } else if strings.Contains(accept, "application/svg+xml") {
-	// 	ofmt = "svg"
-	// } else if strings.Contains(accept, "image/png") {
-	// 	ofmt = "png"
-	// }
+    var args []string
 	switch ifmt {
 	case "tex":
-		// _cntnt := `\documentclass{article}
-		//             \usepackage[utf8]{inputenc}
-		//             \usepackage{graphicx}
-		//             \usepackage{hyperref}
-		//             \begin{document}
-		//             \section{Advanced Document}
-		//             Hello from Go + LaTeX!
-		//             \subsection{Dynamic Content}
-		//             Generated at: \today
-		//             \end{document}`
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "latexmk", "-pdf", inputName)
-		cmd.Dir = tmpdir
-		slogger.InfoContext(r.Context(), "exec", "args", cmd.Args)
-
-		outputb, err := cmd.CombinedOutput()
-		slogger.InfoContext(r.Context(), "output", "output", string(outputb))
-		const compilerErrorMimeType = "text/vnd.asy-compiler-error"
-		if err != nil {
-			slogger.WarnContext(r.Context(), "exec error", "error", err)
-			// TODO: maybe parse errors to json server side
-			w.Header().Add("Content-Type", compilerErrorMimeType)
-			w.WriteHeader(200)
-			w.Write(outputb)
-		} else {
-			if _, err := os.Stat(outputFullPath); err != nil {
-				slogger.WarnContext(r.Context(), "cannot stat output file to serve it", "error", err)
-				w.Header().Add("Content-Type", compilerErrorMimeType)
-				w.WriteHeader(200)
-				w.Write([]byte("no output"))
-			} else {
-				http.ServeFile(w, r, outputFullPath)
-			}
-		}
-
+        args = []string{"latexmk", "-pdf", inputName}
 	case "asy":
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "asy", inputName, "-safe", "-f", ofmt, "-o", "output")
-		cmd.Dir = tmpdir
-		slogger.InfoContext(r.Context(), "exec cmd", "args", cmd.Args)
-
-		outputb, err := cmd.CombinedOutput()
-		slogger.InfoContext(r.Context(), "output", "output", string(outputb))
-		const compilerErrorMimeType = "text/vnd.asy-compiler-error"
-		if err != nil {
-			slogger.WarnContext(r.Context(), "exec error", "error", err)
-			// TODO: maybe parse errors to json server side
-			w.Header().Add("Content-Type", compilerErrorMimeType)
-			w.WriteHeader(200)
-			w.Write(outputb)
-		} else {
-			outfilepath := filepath.Join(tmpdir, "output."+ofmt)
-			if _, err := os.Stat(outfilepath); err != nil {
-				slogger.WarnContext(r.Context(), "cannot stat output file to serve it", "error", err)
-				w.Header().Add("Content-Type", compilerErrorMimeType)
-				w.WriteHeader(200)
-				w.Write([]byte("no output"))
-			} else {
-				http.ServeFile(w, r, outfilepath)
-			}
-		}
+        args = []string{"asy", inputName, "-safe", "-f", ofmt, "-o", "input"}
 	default:
 		w.WriteHeader(http.StatusBadRequest)
+        return
 	}
 
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+    cmd.Dir = tmpdir
+    slogger.InfoContext(r.Context(), "exec cmd", "args", cmd.Args)
+
+    outputb, err := cmd.CombinedOutput()
+    slogger.InfoContext(r.Context(), "output", "output", string(outputb))
+    const compilerErrorMimeType = "text/vnd.asy-compiler-error"
+    if err != nil {
+        slogger.WarnContext(r.Context(), "exec error", "error", err)
+        // TODO: maybe parse errors to json server side
+        w.Header().Add("Content-Type", compilerErrorMimeType)
+        w.WriteHeader(200)
+        w.Write(outputb)
+    } else {
+        if _, err := os.Stat(outputFullPath); err != nil {
+            slogger.WarnContext(r.Context(), "cannot stat output file to serve it", "error", err)
+            w.Header().Add("Content-Type", compilerErrorMimeType)
+            w.WriteHeader(200)
+            w.Write([]byte("no output"))
+        } else {
+            http.ServeFile(w, r, outputFullPath)
+        }
+    }
+
+}
+
+func incCompilations(userID userID) error {
+    _, err := db.Exec("UPDATE users SET evals = evals + 1 WHERE id = ?", userID)
+    return err
 }
 
 func main() {
@@ -156,10 +118,14 @@ func main() {
 	var addr string
 	flag.StringVar(&addr, "addr", "0.0.0.0:8080", "address to use")
 	flag.Parse()
+
 	slogger.Info("starting server", "addr", addr)
+
+    initDB()
+    defer closeDB()
+
 	err := http.ListenAndServe(addr, corsMiddleware(loggingMiddleware(mux)))
 	if err != nil {
 		slog.Error("listen", "failed to listen", err)
 	}
-	// log.Fatal(http.ListenAndServe(addr, mux))
 }

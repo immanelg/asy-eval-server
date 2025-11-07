@@ -3,7 +3,7 @@ FROM golang:1.24-alpine AS builder
 COPY . /app
 WORKDIR /app
 
-RUN CGO_ENABLED=0 go build -ldflags '-s -w -extldflags "-static"' -o /app/api *.go
+RUN CGO_ENABLED=1 go build -ldflags '-s -w -extldflags "-static"' -o /app/api *.go
 
 FROM alpine:3.19
 

@@ -1,4 +1,5 @@
 import "./styles.css";
+import * as icon from "./icons.ts";
 import { init, classModule, propsModule, styleModule, eventListenersModule, type VNode, fragment } from "snabbdom";
 import { h } from "./h.ts";
 
@@ -98,34 +99,49 @@ const render = (): VNode => {
             h("button#send-eval.btn", {
                 props: { disabled: code.trim() === "" || status === "loading" },
                 on: { click: sendEval },
-            }, status === "loading" ? "Evaluating..." : "Evaluate"),
-            h("select.btn.typeswitch", 
-                {on: {change: (e: any) => { console.log(e.target.value); onOuputTypeChange(e.target.value as OutputType) } }}, 
-                [
-                    h("option", { props: { value: "svg", selected: state.outputType === "svg" } }, "SVG"),
-                    h("option", { props: { value: "png", selected: state.outputType === "png" } }, "PNG"),
-                    h("option", { props: { value: "pdf", selected: state.outputType === "pdf" } }, "PDF"),
+            }, status === "loading" && "Evaluating..." || [icon.render(icon.Run), "Evaluate"]),
+
+            h("div.btn.typeswitch", [
+                icon.render(icon.Read),
+                // h("div.menu", 
+
+                    [
+                    h("div.menu-selected", h("span", state.outputType.toUpperCase())),
+                    h("div.menu-options", 
+                        ["svg", "png", "pdf"].map(name => 
+                            h("div.menu-option", {
+                                on: { click: () => onOuputTypeChange(name as OutputType) }
+                            }, name.toUpperCase())
+                        )
+                    ),
                 ]
-            ),
-            h("select.btn.typeswitch", 
-                {on: {change: (e: any) => { console.log(e.target.value); onInputTypeChange(e.target.value as InputType) } }}, 
-                [
-                    h("option", { props: { value: "asy", selected: state.inputType === "asy" } }, "Asymptote"),
-                    h("option", { props: { value: "tex", selected: state.inputType === "tex" } }, "LaTeX"),
-                ]
-            ),
-            h("label.btn.autoEval", [
-                h("input", {
-                    props: {
-                        type: "checkbox",
-                        name: "autoEval",
-                        checked: doAutoEval,
-                    },
-                    on: { change: toggleAutoEval },
-                }),
-                h("span", "Auto-eval"),
+                // ),
             ]),
-            h("button#start-demo.btn", { on: { click: startDemo } }, "Demo!"),
+
+            h("div.btn.typeswitch", [
+                icon.render(icon.Write),
+                //h("div.menu", 
+                    [
+                    h("div.menu-selected", displayInputType(state.inputType)),
+                    h("div.menu-options", 
+                        ["asy", "tex"].map(name => 
+                            h("div.menu-option", {
+                                on: { click: () => onInputTypeChange(name as InputType) }
+                            }, displayInputType(name as InputType))
+                        )
+                    ),
+                ]
+               // ),
+            ]),
+
+            h("button.btn.autoEval", {
+                class: { active: doAutoEval },
+                on: { click: toggleAutoEval },
+            }, [
+                doAutoEval ? icon.render(icon.Watch) : icon.render(icon.Unwatch),
+                "Auto-eval"
+            ]),
+            h("button#start-demo.btn", { on: { click: startDemo } }, [icon.render(icon.Gift), "Demo!"]),
 
         ]),
 
@@ -150,15 +166,16 @@ const render = (): VNode => {
             ]),
         ],
 
-        status == "ok" && h("div#output", {on: {click: (e) => scroll(e.target)}}, [
+        status == "ok" && h("div#output", {on: {click: (e: any) => scroll(e.target)}}, [
             renderOutput(),
             h("div#share-panel", [
-                h( "button.btn.share", { on: { click: downloadOutput        } }, saveClicked ? "Saved!" : "Save"),
-                h( "button.btn.share", { on: { click: copyOutputToClipboard } }, copyClicked ? "Copied!" : "Copy"),
+                h("button#save.btn", { class: {clicked: saveClicked}, on: { click: downloadOutput        } }, saveClicked && [icon.render(icon.Save), "Downloaded"] || [icon.render(icon.Save), "Download"]),
+                h("button#copy.btn", { class: {clicked: copyClicked}, on: { click: copyOutputToClipboard } }, copyClicked && [icon.render(icon.Copied), "Copied"]     || [icon.render(icon.Copy), "Copy"]    ),
             ])
         ])
     ]);
 };
+const displayInputType = (name: InputType) => { switch (name) { case "tex": return "LaTeX"; case "asy": return "Asymptote"} }
 
 const scroll = (el: string | any) => {
     if (typeof el === "string") el = document.querySelector(el)!;
@@ -186,6 +203,8 @@ const startDemo = () => {
     demoTimer = setTimeout(() => {
         demoCodeIdx = 0;
         state.code = "";
+        state.inputType = "asy";
+        state.outputType = "svg";
         redraw();
         const next = () => {
             if (demoCodeIdx < demoCode.length) {
@@ -234,6 +253,7 @@ const toggleAutoEval = e => {
 const onHotkey = (e: KeyboardEvent) => {
     const el = e.target as HTMLTextAreaElement;
     if (e.ctrlKey && e.key === "Enter" && state.code.trim() !== "") sendEval();
+    // TODO: indent on Enter
     else if (e.key == "Escape") el.blur();
     else if (e.key == 'Tab') {
         e.preventDefault();
@@ -354,29 +374,34 @@ const downloadOutput = () => {
     }
 };
 
-const copyOutputToClipboard = () => {
+const copyOutputToClipboard = async () => {
     state.copyClicked = true;
     redraw();
     const { svgText, outputType, pngBlob, pdfBlob } = state;
 
-    switch (outputType) {
-        case "svg":
-            navigator.clipboard.writeText(svgText!);
-            break;
-        case "png":
-            navigator.clipboard.write([
-                new ClipboardItem(
-                    { [contentType()]: pdfBlob! 
-                })
-            ]);
-            break;
-        case "pdf":
-            navigator.clipboard.write([
-                new ClipboardItem(
-                    { [contentType()]: pdfBlob! 
-                })
-            ]);
-            break;
+    try {
+        switch (outputType) {
+            case "svg":
+                await navigator.clipboard.writeText(svgText!);
+                break;
+            case "png":
+                navigator.clipboard.write([
+                    new ClipboardItem(
+                        { [contentType()]: pdfBlob! 
+                    })
+                ]);
+                break;
+            case "pdf":
+                await navigator.clipboard.write([
+                    new ClipboardItem(
+                        { [contentType()]: pdfBlob! 
+                    })
+                ]);
+                break;
+        }
+    } catch (e) {
+        alert(e);
+        throw e;
     }
 };
 let autosaveInterval: TimerJob | null = null;
