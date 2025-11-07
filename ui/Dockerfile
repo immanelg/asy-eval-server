@@ -14,6 +14,6 @@ RUN ./node_modules/.bin/vite build
 
 FROM caddy:alpine
 
-COPY --from=ui-files /app/dist /usr/share/caddy
+COPY --from=ui-files /app/dist /srv
 
 COPY ./Caddyfile /etc/caddy/Caddyfile

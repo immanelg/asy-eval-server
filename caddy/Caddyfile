@@ -1,0 +1,22 @@
+{
+	admin off
+}
+
+{$ASYEVAL_HOSTNAME} {
+    header * {
+        X-Content-Type-Options "nosniff"
+    }
+
+    handle_path /api/* {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        }
+
+        reverse_proxy api_server:8050 
+    }
+    handle_path /* {
+        reverse_proxy ui_server:8051
+    }
+}

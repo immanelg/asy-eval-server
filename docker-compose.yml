@@ -1,12 +1,20 @@
 services:
-  reverse_proxy:
-    build: 
-      context: ./ui
-      dockerfile: Dockerfile
-    environment:
-      - VITE_API_URL=/api
-    ports:
-      - "80:80"
+
+  ui_server:
+    build: ./ui
 
   api_server:
     build: ./api
+
+  reverse_proxy:
+    build: ./caddy
+    environment:
+        ASYEVAL_HOSTNAME: http://localhost
+        # ASYEVAL_HOSTNAME: www.example.com
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
