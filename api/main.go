@@ -32,7 +32,7 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
     case "asy": iext = ifmt
     case "tex": iext = ifmt
     default: 
-        w.WriteHeader(http.StatusBadRequest)
+        http.Error(w, "invalid input type", http.StatusBadRequest)
         return
     }
     var oext string
@@ -41,7 +41,7 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
     case "pdf": oext = ofmt
     case "png": oext = ofmt
     default: 
-        w.WriteHeader(http.StatusBadRequest)    
+        http.Error(w, "invalid output type", http.StatusBadRequest)
         return
     }
 
@@ -54,6 +54,8 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
     inpf, err := os.Create(inputFullPath)
     if err != nil {
         slogger.ErrorContext(r.Context(), "create input file failed", "error", err)
+        http.Error(w, "cannot create input file", http.StatusInternalServerError)
+        return
     }
     slogger.DebugContext(r.Context(), "create input file")
     defer func() {
@@ -69,6 +71,8 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
         n, err := r.Body.Read(buf)
         if err != nil && err != io.EOF {
             slogger.ErrorContext(r.Context(), "read body failed", "error", err)
+            http.Error(w, "cant read body", http.StatusInternalServerError)
+            return
         }
         if n == 0 {
             break
@@ -76,6 +80,8 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 
         if _, err := inpf.Write(buf[:n]); err != nil {
             slogger.ErrorContext(r.Context(), "write to input file failed", "error", err)
+            http.Error(w, "cannot write to input file", http.StatusInternalServerError)
+            return
         }
     }
 
@@ -85,9 +91,6 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
         args = []string{"latexmk", "-pdf", inputName}
     case "asy":
         args = []string{"asy", inputName, "-safe", "-f", ofmt, "-o", "input"}
-    default:
-        w.WriteHeader(http.StatusBadRequest)
-        return
     }
 
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -118,7 +121,7 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func incCompilations(userID userID) error {
+func incCompilations(userID int) error {
     _, err := db.Exec("UPDATE users SET evals = evals + 1 WHERE id = ?", userID)
     return err
 }
@@ -138,10 +141,10 @@ func main() {
     defer closeDB()
 
     err := http.ListenAndServe(addr, 
-        userSessionMiddleware(
-        corsMiddleware(
         errorHandlingMiddleware(
         loggingMiddleware(
+        corsMiddleware(
+        userSessionMiddleware(
             mux)))))
     if err != nil {
         slog.Error("listen", "failed to listen", err)

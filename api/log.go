@@ -18,8 +18,11 @@ type slogHandler struct {
 }
 
 func (h slogHandler) Handle(ctx context.Context, record slog.Record) error {
-	if requestID, ok := ctx.Value(contextKeyRequestID).(string); ok { //not inside request
-		record.Add("rid", slog.StringValue(requestID))
+	if requestID, ok := ctx.Value(contextKeyRequestID).(int); ok { 
+		record.Add("rid", slog.IntValue(requestID))
+	}
+	if userID, ok := ctx.Value(contextKeyUserID).(int); ok {
+		record.Add("uid", slog.IntValue(userID))
 	}
 	return h.Handler.Handle(ctx, record)
 }
@@ -49,13 +52,13 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// requestID := fmt.Sprintf("%d", nextReqId.Load())
 		// nextReqId.Add(1)
-		requestID := strconv.Itoa(rand.Int())
+		requestID := rand.Int()
 
 		ctx := context.WithValue(r.Context(), contextKeyRequestID, requestID)
 		r = r.WithContext(ctx)
 
 		slogger.InfoContext(ctx, "start request", "method", r.Method, "path", r.URL.Path)
-		w.Header().Set("Request-ID", requestID)
+		w.Header().Set("Request-ID", strconv.Itoa(requestID))
 
         lw := &loggingResponseWriter{w, http.StatusOK}
 
