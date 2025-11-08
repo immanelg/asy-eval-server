@@ -35,11 +35,20 @@ func init() {
 
 var nextReqId atomic.Uint64
 
+type loggingResponseWriter struct {
+    http.ResponseWriter
+    StatusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+    lrw.StatusCode = code
+    lrw.ResponseWriter.WriteHeader(code)
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// requestID := fmt.Sprintf("%d", nextReqId.Load())
 		// nextReqId.Add(1)
-
 		requestID := strconv.Itoa(rand.Int())
 
 		ctx := context.WithValue(r.Context(), contextKeyRequestID, requestID)
@@ -48,10 +57,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		slogger.InfoContext(ctx, "start request", "method", r.Method, "path", r.URL.Path)
 		w.Header().Set("Request-ID", requestID)
 
+        lw := &loggingResponseWriter{w, http.StatusOK}
+
 		t := time.Now()
-		next.ServeHTTP(w, r)
+        next.ServeHTTP(lw, r)
 		elapsed := time.Since(t)
 
-		slogger.InfoContext(ctx, "done request", "elapsed-ms", elapsed.Milliseconds())
+		slogger.InfoContext(ctx, "done request", "status", lw.StatusCode, "elapsed-ms", elapsed.Milliseconds())
 	})
 }
