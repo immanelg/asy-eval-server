@@ -12,6 +12,7 @@ type OutputType = "svg" | "png" | "pdf";
 
 type State = {
     code: string;
+    cursorPosition: number;
 
     inputType: InputType;
 
@@ -38,23 +39,9 @@ const renderOutput = () => {
     case "pdf": return h("embed#output-impl", { style: {"min-height": "1150px"}, props: { src: state.pdfUrl, type: "application/pdf" } });
     }
 };
-
 const render = (): VNode => {
     const { code, status, errorMessage, 
         copyClicked, saveClicked, doAutoEval } = state;
-
-    // const outputTypeChoice = (type: OutputType): VNode =>
-    //     h("label.btn.typeswitch", {}, [
-    //         h("input", {
-    //             props: {
-    //                 type: "radio",
-    //                 name: "outputType",
-    //                 checked: outputType === type,
-    //             },
-    //             on: { change: onOuputTypeChange(type) },
-    //         }),
-    //         h("span", {}, type.toUpperCase()),
-    //     ]);
                     
     return h("div", [
         h("h1", {}, "Asymptote Evaluator"),
@@ -81,6 +68,50 @@ const render = (): VNode => {
         //         },
         //     }),
         // ]),
+        h("div.editor-wrapper", [
+            h("div.editor-gutter", [
+                Array.from({length: numlines()+1}, (_, i) => 
+                    h("div.editor-linenum", {key: i, style: {color: i===(numlines())?"rgb(12 79 78)":undefined}}, `${i+1}`)
+                ),
+            ]),
+            h("pre.editor", {
+                props: {contentEditable: true},
+                hook: {
+                    insert: vnode => {
+                        console.log("insert");
+                        // vnode.elm.textContent = state.code || "";
+                        vnode.elm.innerHTML = syHighlight(state.code || "");
+                    },
+                    update: (oldVnode, vnode) => {
+                        console.log("update");
+                        const editable = vnode.elm;
+                        if (editable.textContent !== state.code) {
+                            const restore = saveCaretPosition(editable);
+                            vnode.elm.innerHTML = syHighlight(state.code || "");
+                            restore();
+                            editable.focus();
+                        }
+                    }
+                },
+                on: {
+                    keydown: onEditorKeydown,
+                    input: onEditorInput,
+                    click: (e) => {
+                    },
+                    keyup: (e) => {
+                    },
+                }
+            }),
+
+                // state.code.split('\n').map((line, i) =>
+                //     h("div.editor-line", { 
+                //         props: {contentEditable: true}
+                //         on: {
+                //             keydown: ,
+                //         },
+                //     }, line)
+                // ),
+        ]),
         h("textarea#editor", {
             props: {
                 id: "editor",
@@ -175,7 +206,81 @@ const render = (): VNode => {
         ])
     ]);
 };
+const syHighlight = (code: string) => {
+    return code.replace(/(import)/, '<span class="sy-kw">$1</span>');
+}
+
+function saveCaretPosition(context) {
+    var selection = window.getSelection();
+    var range = selection.getRangeAt(0);
+    range.setStart(context, 0);
+    var len = range.toString().length;
+
+    return function restore() {
+        var pos = getTextNodeAtPosition(context, len);
+        selection.removeAllRanges();
+        var range = document.createRange();  // Note: Use document.createRange() for broader compatibility
+        range.setStart(pos.node, pos.position);
+        selection.addRange(range);
+    }
+}
+function getTextNodeAtPosition(root, index) {
+    const NODE_TYPE = NodeFilter.SHOW_TEXT;
+    var treeWalker = document.createTreeWalker(
+        root,
+        NODE_TYPE,
+        { acceptNode: function(elem) {
+            if (index > elem.textContent.length) {
+                index -= elem.textContent.length;
+                return NodeFilter.FILTER_REJECT;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+        }},
+        false
+    );
+    var c = treeWalker.nextNode();
+    return {
+        node: c || root.lastChild || root,
+        position: index
+    };
+}
+
+
+
+
+
+
+
 const displayInputType = (name: InputType) => { switch (name) { case "tex": return "LaTeX"; case "asy": return "Asymptote"} }
+
+const onEditorKeydown = e => {
+    const { key, ctrlKey, metaKey } = e;
+
+    if (e.ctrlKey && e.key === "Enter" && state.code.trim() !== "") { 
+        sendEval();
+        // event.preventDefault();
+    } else if (key === 'Tab') {
+        e.preventDefault();
+        document.execCommand('insertText', false, '    ');
+    } else if (key === 'Backspace') {
+        // event.preventDefault();
+    } else if (key == "Enter") {
+        e.preventDefault()
+          document.execCommand('insertLineBreak')
+    }
+};
+const onEditorInput = e => {
+    const changed = e.target.textContent || "";
+    if (changed === state.code) return;  // input called second time after update() hook
+    state.code = changed;
+    if (state.doAutoEval) startAutoEval();
+    redraw();
+};
+const numlines = () => {
+    let n = 1;
+    for (const c of state.code) if (c === "\n") n++;
+    return n;
+}
 
 const scroll = (el: string | any) => {
     if (typeof el === "string") el = document.querySelector(el)!;
@@ -469,6 +574,7 @@ const state: State = {
 
     copyClicked: false,
     saveClicked: false,
+        cursorPosition: 0,
 };
 
 const code = loadFromHash();
@@ -496,7 +602,7 @@ const patch = init([classModule, propsModule, styleModule, eventListenersModule]
 let vnode: VNode | null = null;
 
 const redraw = () => {
-    if (env.DEV) console.count("redraw");
+    if (false && env.DEV) console.count("redraw");
     vnode = patch(vnode || document.getElementById("app")!, render());
 };
 

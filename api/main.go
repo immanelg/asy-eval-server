@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -169,6 +168,6 @@ func main() {
         corsMiddleware(
             mux)))))
     if err != nil {
-        slog.Error("listen", "failed to listen", err)
+        slogger.Error("listen", "failed to listen", err)
     }
 }
