@@ -36,7 +36,7 @@ func genToken(userID int) string {
     token := fmt.Sprintf("%s#%s", data, signature)
     return token
 }
-func session(w http.ResponseWriter, r *http.Request) (int, bool) {
+func session(w http.ResponseWriter, r *http.Request) (result int, isValid bool) {
     cookie, err := r.Cookie("session")
     if err != nil {
         if err != http.ErrNoCookie {
@@ -77,6 +77,7 @@ func session(w http.ResponseWriter, r *http.Request) (int, bool) {
     if !cmpSignatures(signString(data), signature) {
         return 0, false
     }
+    // insecure: tokenNeedsRefreshing := ts.Add(time.Second * sessionCookiesMaxAgeSeconds / 2).After(time.Now())
     return userID, true
 }
 
@@ -97,6 +98,7 @@ func userSessionMiddleware(next http.Handler) http.Handler {
             }
             http.SetCookie(w, &cookie)
         }
+        slogger.DebugContext(r.Context(), "user cookie", "uid", userID)
 		ctx := context.WithValue(r.Context(), contextKeyUserID, userID)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)

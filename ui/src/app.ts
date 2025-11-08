@@ -308,7 +308,7 @@ const doEvalRequest = async () => {
     }
 
     const blob = await response.blob();
-    if (response.headers.get("Content-Type") === "text/vnd.asy-compiler-error+json") {
+    if (response.headers.get("Content-Type") === "application/vnd.asy-compiler-error") {
         state.status = "err";
         state.errorMessage = await blob.text();
         return;

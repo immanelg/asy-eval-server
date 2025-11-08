@@ -31,7 +31,8 @@ const contextKeyRequestID = "requestID"
 
 func init() {
 	baseHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: slog.LevelDebug,
+		// Level: slog.LevelInfo,
 	})
 	slogger = slog.New(slogHandler{baseHandler})
 }

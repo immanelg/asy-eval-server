@@ -9,7 +9,7 @@ FROM alpine:3.19
 
 RUN apk update && \
     apk add -X http://dl-cdn.alpinelinux.org/alpine/edge/testing asymptote && \
-    apk add ca-certificates
+    apk add pdf2svg ca-certificates
 
 RUN adduser -D appuser
 USER appuser
