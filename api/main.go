@@ -118,6 +118,16 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
         outputb, err := cmd.CombinedOutput()
         slogger.DebugContext(r.Context(), "output", "output", string(outputb))
         if err != nil {
+            exitErr := err.(*exec.ExitError)
+            slogger.WarnContext(r.Context(), "exec failed", "exit code", exitErr.ExitCode(), "signal", exitErr.ProcessState, "output", string(outputb))
+
+            if ctx.Err() == context.DeadlineExceeded {
+                slogger.WarnContext(r.Context(), "exec timeout: process killed");
+                w.Header().Add("Content-Type", "text/plain")
+                w.WriteHeader(http.StatusRequestTimeout) 
+                w.Write([]byte("Command timed out!\n"))
+                return
+            }
             slogger.WarnContext(r.Context(), "exec error", "error", err)
             // TODO: maybe parse errors to json server side
             w.Header().Add("Content-Type", compilerErrorMimeType)

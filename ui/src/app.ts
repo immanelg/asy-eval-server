@@ -356,19 +356,36 @@ const onHotkey = (e: KeyboardEvent) => {
 };
 
 let editorContentRef = null;
+let gutterRef = null;
 const editorSyncScroll = (textarea) => {
     editorContentRef.scrollTop = textarea.scrollTop;
     editorContentRef.scrollLeft = textarea.scrollLeft ;
+    gutterRef.scrollTop = textarea.scrollTop;
+    gutterRef.scrollLeft = textarea.scrollLeft ;
+}
+const gutter = () => {
+    let length = s.code.split("").filter(c => c === "\n").length;
+    length++; // current line
+    length++; // eob
+    return Array.from({length}, (_, i) => i < length-1 ? 
+        h("div.editor-lnr", { key: i }, `${i+1}`)
+        : h("div.editor-lnr.eob", { key: i }, `~`)
+    );
 }
 
 const renderEditor = (): VNode => {
-    return h("div.editor", [
-        h("div.editor-gutter",
-            s.code.split('').filter(c => c === "\n").concat([1, 2]).map((_, i) => 
-                h("div.editor-lnr", { key: i }, `${i+1}`)
+    return h("div.editor",
+
+        h("div.editor-inner", [
+            h("div.editor-gutter", {
+                    hook: {
+                        create: (_, vnode) => {
+                            gutterRef = vnode.elm;
+                        },
+                    }
+                },
+                gutter(),
             ),
-        ),
-        h("div.editor-main", [
             h("textarea.editor-textarea", {
                 props: {
                     value: code,
@@ -402,9 +419,9 @@ const renderEditor = (): VNode => {
                 },
             }, [
 
-            ]),
-        ]),
-    ])
+                ]),
+        ])
+    )
 }
 
 
@@ -419,19 +436,6 @@ const render = (): VNode => {
         h("a", { props: { href: "https://github.com/immanelg/asy-eval-server" } }, "View the source on GitHub ⭐"),
 
         renderEditor(),
-
-        h("textarea#editor", {
-            props: {
-                value: code,
-                readonly: demoTimer !== null,
-            },
-            class: { [status as string]: true },
-            on: {
-                input: editorTextareaInput,
-                keydown: onHotkey,
-                click: e => scroll(e.target),
-            },
-        }),
 
         h("div#eval-panel", [
             h("button#send-eval.btn", {
