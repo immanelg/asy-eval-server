@@ -76,36 +76,103 @@ textarea#editor {
 textarea#editor:focus {
     outline: none;
 }
-
-.editor-wrapper {
+.editor {
     display: flex;
-    flex-direction: row;
-    font-family: monospace;
-    line-height: 1.5;
-    height: 400px;
 
     .editor-gutter {
-        padding: auto 0.5em;
+        flex-shrink: 0;
         width: 1.5em;
-    }
-    .editor {
-        width: 100%;
         margin: 0;
-        border: none;
-        outline: none;
-        resize: none;
+        padding-right: 1em;
+        .editor-lnr {
+            line-height: 1.5em;
+            font-size: 15pt;
+            font-family: monospace;
+            white-space: pre;
+            text-align: right;
 
-        overflow: auto;
-        white-space: pre-wrap;
+            color: rgb(140 140 140);
+        }
     }
+
+    .editor-main {
+        flex: 1;
+        position: relative;
+
+        /* overflow: hidden; */
+        /* overflow: auto; */
+        /* height: 600px; */
+        /* width: 500px; */
+        /* resize: none; */
+        .editor-textarea, .editor-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            width: calc(100% - 32px);
+            max-width: 100%;
+            height: 600px;
+            line-height: 1.5em;
+            font-size: 15pt;
+            font-family: monospace;
+
+            overflow: auto;
+            white-space: pre;
+        }
+        .editor-textarea {
+            z-index: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            color: transparent;
+            background: transparent;
+            caret-color: white;
+            resize: none;
+        }
+        .editor-overlay {
+            z-index: 0;
+        }
+    }
+
+    height: 600px;
 
     border: 4px solid hsl(0, 0%, 30%);
     border-radius: 4px;
     background-color: rgb(20 20 20);
 }
 
+
+/* .editor-wrapper { */
+/*     display: flex; */
+/*     flex-direction: row; */
+/*     font-family: monospace; */
+/*     line-height: 1.5; */
+/*     height: 400px; */
+/**/
+/*     .editor-gutter { */
+/*         padding: auto 0.5em; */
+/*         width: 1.5em; */
+/*     } */
+/*     .editor { */
+/*         width: 100%; */
+/*         margin: 0; */
+/*         border: none; */
+/*         outline: none; */
+/*         resize: none; */
+/**/
+/*         overflow: auto; */
+/*         white-space: pre-wrap; */
+/*     } */
+/**/
+/*     border: 4px solid hsl(0, 0%, 30%); */
+/*     border-radius: 4px; */
+/*     background-color: rgb(20 20 20); */
+/* } */
+/**/
 span.sy-kw {
-    font-weight: bold;
+    /* font-weight: bold; */
     color: hsl(2 48% 44%);
 }
 

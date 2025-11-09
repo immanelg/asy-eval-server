@@ -6,13 +6,12 @@ import { h } from "./h.ts";
 const env = import.meta.env;
 
 const API_URL = env.VITE_API_URL;
-console.log(env);
+if (env.DEV) console.log(env);
 
 type EvalStatus = null | "loading" | "ok" | "err" | "network-err";
 
 type InputType = "asy" | "tex";
 type OutputType = "svg" | "png" | "pdf";
-
 
 
 type State = {
@@ -117,9 +116,56 @@ const render = (): VNode => {
 //                //     }, line)
 //                // ),
 //        ]),
+
+
+
+
+        h("div.editor", [
+            h("div.editor-gutter",
+                state.code.split('').filter(c => c === "\n").concat([1, 2]).map((_, i) => 
+                    h("div.editor-lnr", { key: i }, `${i+1}`)
+                ),
+            ),
+            h("div.editor-main", [
+                h("textarea.editor-textarea", {
+                    props: {
+                        value: code,
+                        readonly: demoTimer !== null,
+                        spellcheck: "false",
+                    },
+                    class: { [status as string]: true },
+                    on: {
+                        input: onEditorChange,
+                        keydown: onHotkey,
+                        click: e => scroll(e.target),
+                        scroll: e => {
+                            console.log(e);
+
+                            // FIXME: store ref or whatever or refactor it as component 
+                            document.querySelector(".editor-overlay").scrollTop = e.target.scrollTop;
+                            document.querySelector(".editor-overlay").scrollLeft = e.target.scrollLeft ;
+                        },
+                    },
+
+                }, state.code),
+                h("pre.editor-overlay", {
+                    hook: {
+                        insert: vnode => {
+                            vnode.elm.innerHTML = syHighlight(state.code);
+                        },
+                        update: (oldVnode: VNode, newVnode: VNode) => {
+                            if (oldVnode.elm.textContent !== state.code) {
+                                newVnode.elm.innerHTML = syHighlight(state.code);
+                            }
+                        },
+                    },
+                }, [
+
+                ]),
+            ]),
+        ]),
         h("textarea#editor", {
             props: {
-                id: "editor",
                 value: code,
                 readonly: demoTimer !== null,
             },
@@ -212,7 +258,7 @@ const render = (): VNode => {
     ]);
 };
 const syHighlight = (code: string) => {
-    return code.replace(/(import)/, '<span class="sy-kw">$1</span>');
+    return code.replace(/(import|if|for)/g, '<span class="sy-kw">$1</span>');
 }
 
 
@@ -314,6 +360,10 @@ const contentType = () => {
 const onEditorChange = e => {
     state.code = e.target.value;
     if (state.doAutoEval) startAutoEval();
+
+  console.log(e);
+    document.querySelector(".editor-overlay").scrollTop = e.target.scrollTop;
+    document.querySelector(".editor-overlay").scrollLeft = e.target.scrollLeft ;
     redraw();
 };
 
