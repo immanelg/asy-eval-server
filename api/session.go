@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,13 +19,19 @@ const sessionCookiesMaxAgeSeconds = 30 * 24 * 60 * 60
 
 const contextKeyUserID = "userID"
 
-const privateKey = "i love solving differential equations"
+var secretKey = "i love solving differential equations"
+func init() {
+    key := os.Getenv("SECRET_KEY")
+    if key == "" {
+        slogger.Warn("no SECRET_KEY in env, using the default one: "+secretKey)
+    }
+}
 
 func cmpSignatures(one string, two string) bool {
     return hmac.Equal([]byte(one), []byte(two))
 }
 func signString(data string) string {
-    h := hmac.New(sha256.New, []byte(privateKey))
+    h := hmac.New(sha256.New, []byte(secretKey))
     h.Write([]byte(data))
     return hex.EncodeToString(h.Sum(nil))
 }

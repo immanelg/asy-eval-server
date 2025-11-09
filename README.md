@@ -7,6 +7,7 @@ Prerequisites:
 - node, npm
 - asymptote
 - pdflatex
+- pdf2svg
 - latexmk
 
 Build the app:
@@ -21,12 +22,17 @@ This runs:
 See ./do for other useful dev commands
 
 ## Deployment (Docker Compose)
-1) (optional) TLS and DNS: set up DNS records
-2) Set ASYEVAL_HOSTNAME env var in docker compose config.
-2) Build and run:
+- Point DNS records to your machine
+- Configure .env:
+    * Set hostname 
+    * Generate secret key
+- Create ./data dir for volume. 
+- (Placeholder database) ./data/db should be rw for your user: `sudo chown 1000:1000 data/db`, `chmod 600 data/db`
+- Build and run:
 ```
 docker compose up --build -d
 ```
+You can deploy backend and frontend independently. In that case, remove one or the other from docker-compose file; for frontend, set appropriate API URL in .env.
 
 ## Features
 - Interactive web app for compiling TeX and Asymptote to SVG, PNG, PDF.

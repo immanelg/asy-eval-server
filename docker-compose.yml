@@ -1,20 +1,37 @@
 services:
 
   ui_server:
-    build: ./ui
+    restart: on-failure:5
+    env_file:
+      - .env
+    build: 
+      context: ./ui
+      args:
+        - VITE_API_URL=${VITE_API_URL}
 
   api_server:
+    restart: on-failure:5
+    env_file:
+      - .env
     build: ./api
+    environment:
+      - DATABASE_PATH=/app/data/db
+    volumes:
+      - ./data:/app/data:rw
 
   reverse_proxy:
+    restart: on-failure:5
     build: ./caddy
-    environment:
-        ASYEVAL_HOSTNAME: http://localhost
-        # ASYEVAL_HOSTNAME: www.example.com
+    env_file:
+      - .env
     cap_add:
       - NET_ADMIN
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    volumes:
+      # certs, config
+      - ./data/caddy_data:/data:rw
+      - ./data/caddy_config:/config:rw
 

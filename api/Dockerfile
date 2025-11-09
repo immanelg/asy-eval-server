@@ -1,14 +1,16 @@
+# based on https://github.com/bnkamalesh/golang-dockerfile/blob/master/Dockerfile-alpine
+
 FROM golang:1.24-alpine AS builder
 
 COPY . /app
 WORKDIR /app
 
-RUN CGO_ENABLED=1 go build -ldflags '-s -w -extldflags "-static"' -o /app/api *.go
+RUN CGO_ENABLED=0 go build -ldflags '-s -w -extldflags "-static"' -o /app/api *.go
 
 FROM alpine:3.19
 
 RUN apk update && \
-    apk add -X http://dl-cdn.alpinelinux.org/alpine/edge/testing asymptote && \
+    apk add -X http://dl-cdn.alpinelinux.org/alpine/edge/testing asymptote pdf2svg && \
     apk add pdf2svg ca-certificates
 
 RUN adduser -D appuser
@@ -21,3 +23,4 @@ WORKDIR /home/app/app
 EXPOSE 8050
 
 CMD ["./api", "-addr", "0.0.0.0:8050"]
+

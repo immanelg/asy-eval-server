@@ -6,10 +6,7 @@ cd "$ROOT"
 
 export PATH="$ROOT/ui/node_modules/.bin:$PATH"
 
-API_ADDR="localhost:8050"
-
 @ui() {
-    # export VITE_API_URL="http://${API_ADDR}"
     cd $ROOT/ui
     case "$1" in 
     i*) npm install ;;
@@ -27,7 +24,7 @@ API_ADDR="localhost:8050"
 @api() {
     cd $ROOT/api
     case "$1" in 
-    w*) watchexec -r -e go go run . -addr localhost:8050 ;;
+    w*) watchexec -r -e go go run . ;;
     b*) go build -o api . ;;
     run) go run . ;;
     vet) go vet . ;;

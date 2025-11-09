@@ -5,10 +5,15 @@ import { h } from "./h.ts";
 
 const env = import.meta.env;
 
+const API_URL = env.VITE_API_URL;
+console.log(env);
+
 type EvalStatus = null | "loading" | "ok" | "err" | "network-err";
 
 type InputType = "asy" | "tex";
 type OutputType = "svg" | "png" | "pdf";
+
+
 
 type State = {
     code: string;
@@ -68,50 +73,50 @@ const render = (): VNode => {
         //         },
         //     }),
         // ]),
-        h("div.editor-wrapper", [
-            h("div.editor-gutter", [
-                Array.from({length: numlines()+1}, (_, i) => 
-                    h("div.editor-linenum", {key: i, style: {color: i===(numlines())?"rgb(12 79 78)":undefined}}, `${i+1}`)
-                ),
-            ]),
-            h("pre.editor", {
-                props: {contentEditable: true},
-                hook: {
-                    insert: vnode => {
-                        console.log("insert");
-                        // vnode.elm.textContent = state.code || "";
-                        vnode.elm.innerHTML = syHighlight(state.code || "");
-                    },
-                    update: (oldVnode, vnode) => {
-                        console.log("update");
-                        const editable = vnode.elm;
-                        if (editable.textContent !== state.code) {
-                            const restore = saveCaretPosition(editable);
-                            vnode.elm.innerHTML = syHighlight(state.code || "");
-                            restore();
-                            editable.focus();
-                        }
-                    }
-                },
-                on: {
-                    keydown: onEditorKeydown,
-                    input: onEditorInput,
-                    click: (e) => {
-                    },
-                    keyup: (e) => {
-                    },
-                }
-            }),
-
-                // state.code.split('\n').map((line, i) =>
-                //     h("div.editor-line", { 
-                //         props: {contentEditable: true}
-                //         on: {
-                //             keydown: ,
-                //         },
-                //     }, line)
-                // ),
-        ]),
+//        h("div.editor-wrapper", [
+//            h("div.editor-gutter", [
+//                Array.from({length: numlines()+1}, (_, i) => 
+//                    h("div.editor-linenum", {key: i, style: {color: i===(numlines())?"rgb(12 79 78)":undefined}}, `${i+1}`)
+//                ),
+//            ]),
+//            h("pre.editor", {
+//                props: {contentEditable: true},
+//                hook: {
+//                    insert: vnode => {
+//                        console.log("insert");
+//                        // vnode.elm.textContent = state.code || "";
+//                        vnode.elm.innerHTML = syHighlight(state.code || "");
+//                    },
+//                    update: (oldVnode, vnode) => {
+//                        console.log("update");
+//                        const editable = vnode.elm;
+//                        if (editable.textContent !== state.code) {
+//                            const restore = saveCaretPosition(editable);
+//                            vnode.elm.innerHTML = syHighlight(state.code || "");
+//                            restore();
+//                            editable.focus();
+//                        }
+//                    }
+//                },
+//                on: {
+//                    keydown: onEditorKeydown,
+//                    input: onEditorInput,
+//                    click: (e) => {
+//                    },
+//                    keyup: (e) => {
+//                    },
+//                }
+//            }),
+//
+//                // state.code.split('\n').map((line, i) =>
+//                //     h("div.editor-line", { 
+//                //         props: {contentEditable: true}
+//                //         on: {
+//                //             keydown: ,
+//                //         },
+//                //     }, line)
+//                // ),
+//        ]),
         h("textarea#editor", {
             props: {
                 id: "editor",
@@ -208,41 +213,6 @@ const render = (): VNode => {
 };
 const syHighlight = (code: string) => {
     return code.replace(/(import)/, '<span class="sy-kw">$1</span>');
-}
-
-function saveCaretPosition(context) {
-    var selection = window.getSelection();
-    var range = selection.getRangeAt(0);
-    range.setStart(context, 0);
-    var len = range.toString().length;
-
-    return function restore() {
-        var pos = getTextNodeAtPosition(context, len);
-        selection.removeAllRanges();
-        var range = document.createRange();  // Note: Use document.createRange() for broader compatibility
-        range.setStart(pos.node, pos.position);
-        selection.addRange(range);
-    }
-}
-function getTextNodeAtPosition(root, index) {
-    const NODE_TYPE = NodeFilter.SHOW_TEXT;
-    var treeWalker = document.createTreeWalker(
-        root,
-        NODE_TYPE,
-        { acceptNode: function(elem) {
-            if (index > elem.textContent.length) {
-                index -= elem.textContent.length;
-                return NodeFilter.FILTER_REJECT;
-            }
-            return NodeFilter.FILTER_ACCEPT;
-        }},
-        false
-    );
-    var c = treeWalker.nextNode();
-    return {
-        node: c || root.lastChild || root,
-        position: index
-    };
 }
 
 
@@ -394,7 +364,7 @@ const doEvalRequest = async () => {
     const { inputType, outputType } = state;
     let response;
     try {
-        response = await fetch(`/api/eval?i=${inputType}&o=${outputType}`, {
+        response = await fetch(`${API_URL}/eval?i=${inputType}&o=${outputType}`, {
             method: "POST",
             headers: {
                 // Accept: contentType(),

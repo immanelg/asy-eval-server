@@ -149,7 +149,7 @@ func main() {
     mux.Handle("POST /eval", http.HandlerFunc(handleCompilation))
 
     var addr string
-    flag.StringVar(&addr, "addr", "0.0.0.0:8080", "address to use")
+    flag.StringVar(&addr, "addr", "localhost:8050", "address to use")
     flag.Parse()
 
     slogger.Info("starting server", "addr", addr)
