@@ -36,243 +36,13 @@ type State = {
     saveClicked: boolean;
 };
 
-const renderOutput = () => {
-    switch (state.outputType) {
-    case "svg": return h("div#output-impl", { props: { innerHTML: state.svgText } });
-    case "png": return h("img#output-impl", { props: { src: state.pngUrl } });
-    case "pdf": return h("embed#output-impl", { style: {"min-height": "1150px"}, props: { src: state.pdfUrl, type: "application/pdf" } });
-    }
-};
-const render = (): VNode => {
-    const { code, status, errorMessage, 
-        copyClicked, saveClicked, doAutoEval } = state;
-                    
-    return h("div", [
-        h("h1", {}, "Asymptote Evaluator"),
-
-        h("a", { props: { href: "https://github.com/immanelg/asy-eval-server" } }, "View the source on GitHub ⭐"),
-
-        // h("div.numbered-wrapper", {}, [
-        //     h("div.linenumbers", {}, 
-        //         Array.from({ length: lines }, (_, i) => 
-
-        //             h("div.line-number", { key: i }, i + 1)
-        //         )
-        //     ),
-        //     h("textarea#editor", {
-        //         props: {
-        //             id: "editor",
-        //             value: code,
-        //         },
-        //         class: { [status as string]: true },
-        //         on: {
-        //             input: onEditorInput,
-        //             keydown: onHotkey,
-        //             focus: e => scrollToElement(e.target),
-        //         },
-        //     }),
-        // ]),
-//        h("div.editor-wrapper", [
-//            h("div.editor-gutter", [
-//                Array.from({length: numlines()+1}, (_, i) => 
-//                    h("div.editor-linenum", {key: i, style: {color: i===(numlines())?"rgb(12 79 78)":undefined}}, `${i+1}`)
-//                ),
-//            ]),
-//            h("pre.editor", {
-//                props: {contentEditable: true},
-//                hook: {
-//                    insert: vnode => {
-//                        console.log("insert");
-//                        // vnode.elm.textContent = state.code || "";
-//                        vnode.elm.innerHTML = syHighlight(state.code || "");
-//                    },
-//                    update: (oldVnode, vnode) => {
-//                        console.log("update");
-//                        const editable = vnode.elm;
-//                        if (editable.textContent !== state.code) {
-//                            const restore = saveCaretPosition(editable);
-//                            vnode.elm.innerHTML = syHighlight(state.code || "");
-//                            restore();
-//                            editable.focus();
-//                        }
-//                    }
-//                },
-//                on: {
-//                    keydown: onEditorKeydown,
-//                    input: onEditorInput,
-//                    click: (e) => {
-//                    },
-//                    keyup: (e) => {
-//                    },
-//                }
-//            }),
-//
-//                // state.code.split('\n').map((line, i) =>
-//                //     h("div.editor-line", { 
-//                //         props: {contentEditable: true}
-//                //         on: {
-//                //             keydown: ,
-//                //         },
-//                //     }, line)
-//                // ),
-//        ]),
-
-
-
-
-        h("div.editor", [
-            h("div.editor-gutter",
-                state.code.split('').filter(c => c === "\n").concat([1, 2]).map((_, i) => 
-                    h("div.editor-lnr", { key: i }, `${i+1}`)
-                ),
-            ),
-            h("div.editor-main", [
-                h("textarea.editor-textarea", {
-                    props: {
-                        value: code,
-                        readonly: demoTimer !== null,
-                        spellcheck: "false",
-                    },
-                    class: { [status as string]: true },
-                    on: {
-                        input: onEditorChange,
-                        keydown: onHotkey,
-                        click: e => scroll(e.target),
-                        scroll: e => {
-                            console.log(e);
-
-                            // FIXME: store ref or whatever or refactor it as component 
-                            document.querySelector(".editor-overlay").scrollTop = e.target.scrollTop;
-                            document.querySelector(".editor-overlay").scrollLeft = e.target.scrollLeft ;
-                        },
-                    },
-
-                }, state.code),
-                h("pre.editor-overlay", {
-                    hook: {
-                        insert: vnode => {
-                            vnode.elm.innerHTML = syHighlight(state.code);
-                        },
-                        update: (oldVnode: VNode, newVnode: VNode) => {
-                            if (oldVnode.elm.textContent !== state.code) {
-                                newVnode.elm.innerHTML = syHighlight(state.code);
-                            }
-                        },
-                    },
-                }, [
-
-                ]),
-            ]),
-        ]),
-        h("textarea#editor", {
-            props: {
-                value: code,
-                readonly: demoTimer !== null,
-            },
-            class: { [status as string]: true },
-            on: {
-                input: onEditorChange,
-                keydown: onHotkey,
-                click: e => scroll(e.target),
-            },
-        }),
-
-        h("div#eval-panel", [
-            h("button#send-eval.btn", {
-                props: { disabled: code.trim() === "" || status === "loading" },
-                on: { click: sendEval },
-            }, status === "loading" && "Evaluating..." || [icon.render(icon.Run), "Evaluate"]),
-
-            h("div.btn.typeswitch", [
-                icon.render(icon.Read),
-                // h("div.menu", 
-
-                    [
-                    h("div.menu-selected", h("span", state.outputType.toUpperCase())),
-                    h("div.menu-options", 
-                        ["svg", "png", "pdf"].map(name => 
-                            h("div.menu-option", {
-                                on: { click: () => onOuputTypeChange(name as OutputType) }
-                            }, name.toUpperCase())
-                        )
-                    ),
-                ]
-                // ),
-            ]),
-
-            h("div.btn.typeswitch", [
-                icon.render(icon.Write),
-                //h("div.menu", 
-                    [
-                    h("div.menu-selected", displayInputType(state.inputType)),
-                    h("div.menu-options", 
-                        ["asy", "tex"].map(name => 
-                            h("div.menu-option", {
-                                on: { click: () => onInputTypeChange(name as InputType) }
-                            }, displayInputType(name as InputType))
-                        )
-                    ),
-                ]
-               // ),
-            ]),
-
-            h("button.btn.autoEval", {
-                class: { active: doAutoEval },
-                on: { click: toggleAutoEval },
-            }, [
-                doAutoEval ? icon.render(icon.Watch) : icon.render(icon.Unwatch),
-                "Auto-eval"
-            ]),
-            h("button#start-demo.btn", { on: { click: startDemo } }, [icon.render(icon.Gift), "Demo!"]),
-
-        ]),
-
-        status === "network-err" && h("pre#network-err", state.errorMessage),
-        status === "err" && [
-              h("p", "Compiler errors:"),
-              h("pre#compiler-error", {
-                      on: {
-                          click: e => scroll(e.target),
-                          /*click: e => {
-                              const selection = window.getSelection();
-                              const range = docOneument.createRange();
-                              range.selectNodeContents(e.target);
-                              selection.removeAllRanges();
-                              selection.addRange(range);
-                          },*/
-                      },
-                  }, errorMessage),
-              h("p", [
-                "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial: ",
-                h("a", { props: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
-            ]),
-        ],
-
-        status == "ok" && h("div#output", {on: {click: (e: any) => scroll(e.target)}}, [
-            renderOutput(),
-            h("div#share-panel", [
-                h("button#save.btn", { class: {clicked: saveClicked}, on: { click: downloadOutput        } }, saveClicked && [icon.render(icon.Save), "Downloaded"] || [icon.render(icon.Save), "Download"]),
-                h("button#copy.btn", { class: {clicked: copyClicked}, on: { click: copyOutputToClipboard } }, copyClicked && [icon.render(icon.Copied), "Copied"]     || [icon.render(icon.Copy), "Copy"]    ),
-            ])
-        ])
-    ]);
-};
-const syHighlight = (code: string) => {
-    return code.replace(/(import|if|for)/g, '<span class="sy-kw">$1</span>');
-}
-
-
-
-
-
-
 
 const displayInputType = (name: InputType) => { switch (name) { case "tex": return "LaTeX"; case "asy": return "Asymptote"} }
 
 const onEditorKeydown = e => {
     const { key, ctrlKey, metaKey } = e;
 
-    if (e.ctrlKey && e.key === "Enter" && state.code.trim() !== "") { 
+    if (e.ctrlKey && e.key === "Enter" && s.code.trim() !== "") { 
         sendEval();
         // event.preventDefault();
     } else if (key === 'Tab') {
@@ -287,14 +57,14 @@ const onEditorKeydown = e => {
 };
 const onEditorInput = e => {
     const changed = e.target.textContent || "";
-    if (changed === state.code) return;  // input called second time after update() hook
-    state.code = changed;
-    if (state.doAutoEval) startAutoEval();
+    if (changed === s.code) return;  // input called second time after update() hook
+    s.code = changed;
+    if (s.doAutoEval) startAutoEval();
     redraw();
 };
 const numlines = () => {
     let n = 1;
-    for (const c of state.code) if (c === "\n") n++;
+    for (const c of s.code) if (c === "\n") n++;
     return n;
 }
 
@@ -323,13 +93,13 @@ const startDemo = () => {
     cancelAutoEval();
     demoTimer = setTimeout(() => {
         demoCodeIdx = 0;
-        state.code = "";
-        state.inputType = "asy";
-        state.outputType = "svg";
+        s.code = "";
+        s.inputType = "asy";
+        s.outputType = "svg";
         redraw();
         const next = () => {
             if (demoCodeIdx < demoCode.length) {
-                state.code += demoCode[demoCodeIdx];
+                s.code += demoCode[demoCodeIdx];
                 redraw();
                 demoCodeIdx++;
                 const delay = 20;
@@ -344,7 +114,7 @@ const startDemo = () => {
 };
 
 const contentType = () => {
-    const { outputType } = state;
+    const { outputType } = s;
     switch (outputType) {
         case "svg":
             return "image/svg+xml";
@@ -357,61 +127,36 @@ const contentType = () => {
     }
 };
 
-const onEditorChange = e => {
-    state.code = e.target.value;
-    if (state.doAutoEval) startAutoEval();
-
-  console.log(e);
-    document.querySelector(".editor-overlay").scrollTop = e.target.scrollTop;
-    document.querySelector(".editor-overlay").scrollLeft = e.target.scrollLeft ;
-    redraw();
-};
 
 const toggleAutoEval = e => {
-    if (state.doAutoEval) cancelAutoEval();
+    if (s.doAutoEval) cancelAutoEval();
     else startAutoEval();
-    state.doAutoEval = !state.doAutoEval;
-    localStorage.setItem("doAutoEval", state.doAutoEval);
+    s.doAutoEval = !s.doAutoEval;
+    localStorage.setItem("doAutoEval", s.doAutoEval);
     redraw();
-};
-
-const onHotkey = (e: KeyboardEvent) => {
-    const el = e.target as HTMLTextAreaElement;
-    if (e.ctrlKey && e.key === "Enter" && state.code.trim() !== "") sendEval();
-    // TODO: indent on Enter
-    else if (e.key == "Escape") el.blur();
-    else if (e.key == 'Tab') {
-        e.preventDefault();
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
-
-        el.value = el.value.substring(0, start) + "\t" + el.value.substring(end);
-
-        el.selectionStart = el.selectionEnd = start + 1;
-    }
 };
 
 const onOuputTypeChange = (outputType: OutputType) => {
-    state.outputType = outputType;
-    if (state.outputType === "png") {
-        state.pngUrl && URL.revokeObjectURL(state.pngUrl);
-        state.pngUrl = null;
-    } else if (state.outputType === "pdf" && state.pngUrl) {
-        state.pdfUrl && URL.revokeObjectURL(state.pdfUrl);
-        state.pdfUrl = null;
+    s.outputType = outputType;
+    if (s.outputType === "png") {
+        s.pngUrl && URL.revokeObjectURL(s.pngUrl);
+        s.pngUrl = null;
+    } else if (s.outputType === "pdf" && s.pngUrl) {
+        s.pdfUrl && URL.revokeObjectURL(s.pdfUrl);
+        s.pdfUrl = null;
     }
-    localStorage.setItem("outputType", state.outputType);
+    localStorage.setItem("outputType", s.outputType);
     sendEval();
 };
 const onInputTypeChange = (inputType: InputType) => {
-    state.inputType = inputType;
-    localStorage.setItem("inputType", state.inputType);
+    s.inputType = inputType;
+    localStorage.setItem("inputType", s.inputType);
     
     sendEval();
 };
 
 const doEvalRequest = async () => {
-    const { inputType, outputType } = state;
+    const { inputType, outputType } = s;
     let response;
     try {
         response = await fetch(`${API_URL}/eval?i=${inputType}&o=${outputType}`, {
@@ -419,61 +164,61 @@ const doEvalRequest = async () => {
             headers: {
                 // Accept: contentType(),
             },
-            body: state.code,
+            body: s.code,
         });
     } catch (exc) {
-        state.status = "network-err";
-        state.errorMessage = `I caught an exception while performing an HTTP request.\n${exc}`;
+        s.status = "network-err";
+        s.errorMessage = `I caught an exception while performing an HTTP request.\n${exc}`;
         return;
     }
     if (!response.ok) {
-        state.status = "network-err";
-        state.errorMessage = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
+        s.status = "network-err";
+        s.errorMessage = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
         return;
     }
 
     const blob = await response.blob();
     if (response.headers.get("Content-Type") === "application/vnd.asy-compiler-error") {
-        state.status = "err";
-        state.errorMessage = await blob.text();
+        s.status = "err";
+        s.errorMessage = await blob.text();
         return;
     }
 
-    state.status = "ok";
+    s.status = "ok";
     switch (outputType) {
         case "svg":
             const svgText = await blob.text();
-            state.svgText = svgText;
+            s.svgText = svgText;
             break;
         case "png":
             const pngUrl = URL.createObjectURL(blob);
-            state.pngUrl = pngUrl;
-            state.pngBlob = blob;
+            s.pngUrl = pngUrl;
+            s.pngBlob = blob;
             break;
         case "pdf":
             const pdfUrl = URL.createObjectURL(blob);
-            state.pdfUrl = pdfUrl;
-            state.pdfBlob = blob;
+            s.pdfUrl = pdfUrl;
+            s.pdfBlob = blob;
             break;
     }
 };
 const sendEval = async () => {
-    if (state.code.trim() === "") return;
+    if (s.code.trim() === "") return;
 
     cancelAutoEval();
 
-    state.status = "loading" as EvalStatus;
-    state.errorMessage = null;
+    s.status = "loading" as EvalStatus;
+    s.errorMessage = null;
     redraw();
 
     await doEvalRequest();
     redraw();
-    if (state.status === "ok") setTimeout(() => scroll("#output"), 30);
-    else if (state.status === "err") scroll("#compiler-error");
+    if (s.status === "ok") setTimeout(() => scroll("#output"), 30);
+    else if (s.status === "err") scroll("#compiler-error");
 };
 
 const downloadOutput = () => {
-    state.saveClicked = true;
+    s.saveClicked = true;
     redraw();
 
     const downloadFromBlob = (blob: Blob, name: string): void => {
@@ -486,23 +231,23 @@ const downloadOutput = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
-    switch (state.outputType) {
+    switch (s.outputType) {
         case "svg":
-            downloadFromBlob(new Blob([state.svgText!], { type: contentType() }), "asy.svg");
+            downloadFromBlob(new Blob([s.svgText!], { type: contentType() }), "asy.svg");
             break;
         case "png":
-            downloadFromBlob(state.pngBlob!, "asy.png");
+            downloadFromBlob(s.pngBlob!, "asy.png");
             break;
         case "pdf":
-            downloadFromBlob(state.pdfBlob!, "asy.pdf"); 
+            downloadFromBlob(s.pdfBlob!, "asy.pdf"); 
             break;
     }
 };
 
 const copyOutputToClipboard = async () => {
-    state.copyClicked = true;
+    s.copyClicked = true;
     redraw();
-    const { svgText, outputType, pngBlob, pdfBlob } = state;
+    const { svgText, outputType, pngBlob, pdfBlob } = s;
 
     try {
         switch (outputType) {
@@ -529,6 +274,7 @@ const copyOutputToClipboard = async () => {
         throw e;
     }
 };
+
 let autosaveInterval: TimerJob | null = null;
 const autosaveMs = 3 * 1000;
 const cancelAutosave = () => {
@@ -560,10 +306,10 @@ const startAutoEval = () => {
 };
 
 const saveHash = () => {
-    window.location.hash = encodeURIComponent(state.code);
+    window.location.hash = encodeURIComponent(s.code);
 };
 const saveLocalStorage = () => {
-    localStorage.setItem("code", state.code);
+    localStorage.setItem("code", s.code);
 };
 
 const loadFromHash = () => {
@@ -574,9 +320,203 @@ const loadFromHash = () => {
 };
 const loadFromLocalStorage = () => localStorage.getItem("code") || "";
 
+const renderOutput = () => {
+    switch (s.outputType) {
+    case "svg": return h("div#output-impl", { props: { innerHTML: s.svgText } });
+    case "png": return h("img#output-impl", { props: { src: s.pngUrl } });
+    case "pdf": return h("embed#output-impl", { style: {"min-height": "1150px"}, props: { src: s.pdfUrl, type: "application/pdf" } });
+    }
+};
+const syHighlight = (code: string) => {
+    return code.replace(/(import|if|for)/g, '<span class="sy-kw">$1</span>');
+}
+
+const editorTextareaInput = e => {
+    s.code = e.target.value;
+    if (s.doAutoEval) startAutoEval();
+
+    editorSyncScroll(e.target);
+    redraw();
+};
+
+const onHotkey = (e: KeyboardEvent) => {
+    const el = e.target as HTMLTextAreaElement;
+    if (e.ctrlKey && e.key === "Enter" && s.code.trim() !== "") sendEval();
+    // TODO: indent on Enter
+    else if (e.key == "Escape") el.blur();
+    else if (e.key == 'Tab') {
+        e.preventDefault();
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+
+        el.value = el.value.substring(0, start) + "\t" + el.value.substring(end);
+
+        el.selectionStart = el.selectionEnd = start + 1;
+    }
+};
+
+let editorContentRef = null;
+const editorSyncScroll = (textarea) => {
+    editorContentRef.scrollTop = textarea.scrollTop;
+    editorContentRef.scrollLeft = textarea.scrollLeft ;
+}
+
+const renderEditor = (): VNode => {
+    return h("div.editor", [
+        h("div.editor-gutter",
+            s.code.split('').filter(c => c === "\n").concat([1, 2]).map((_, i) => 
+                h("div.editor-lnr", { key: i }, `${i+1}`)
+            ),
+        ),
+        h("div.editor-main", [
+            h("textarea.editor-textarea", {
+                props: {
+                    value: code,
+                    readonly: demoTimer !== null,
+                    spellcheck: "false",
+                },
+                class: { [s.status as string]: true },
+                on: {
+                    input: editorTextareaInput,
+                    keydown: onHotkey,
+                    click: e => scroll(e.target),
+                    scroll: e => {
+                        editorSyncScroll(e.target);
+                    },
+                },
+
+            }, s.code),
+            h("pre.editor-content", {
+                hook: {
+                    create: (_, vnode) => {
+                        editorContentRef = vnode.elm;
+                    },
+                    insert: vnode => {
+                        vnode.elm.innerHTML = syHighlight(s.code);
+                    },
+                    update: (oldVnode: VNode, newVnode: VNode) => {
+                        if (oldVnode.elm.textContent !== s.code) {
+                            newVnode.elm.innerHTML = syHighlight(s.code);
+                        }
+                    },
+                },
+            }, [
+
+            ]),
+        ]),
+    ])
+}
+
+
+
+const render = (): VNode => {
+    const { code, status, errorMessage, 
+        copyClicked, saveClicked, doAutoEval } = s;
+
+    return h("div", [
+        h("h1", {}, "Asymptote Evaluator"),
+
+        h("a", { props: { href: "https://github.com/immanelg/asy-eval-server" } }, "View the source on GitHub ⭐"),
+
+        renderEditor(),
+
+        h("textarea#editor", {
+            props: {
+                value: code,
+                readonly: demoTimer !== null,
+            },
+            class: { [status as string]: true },
+            on: {
+                input: editorTextareaInput,
+                keydown: onHotkey,
+                click: e => scroll(e.target),
+            },
+        }),
+
+        h("div#eval-panel", [
+            h("button#send-eval.btn", {
+                props: { disabled: code.trim() === "" || status === "loading" },
+                on: { click: sendEval },
+            }, status === "loading" && "Evaluating..." || [icon.render(icon.Run), "Evaluate"]),
+
+            h("div.btn.typeswitch", [
+                icon.render(icon.Read),
+                // h("div.menu", 
+
+                    [
+                    h("div.menu-selected", h("span", s.outputType.toUpperCase())),
+                    h("div.menu-options", 
+                        ["svg", "png", "pdf"].map(name => 
+                            h("div.menu-option", {
+                                on: { click: () => onOuputTypeChange(name as OutputType) }
+                            }, name.toUpperCase())
+                        )
+                    ),
+                ]
+                // ),
+            ]),
+
+            h("div.btn.typeswitch", [
+                icon.render(icon.Write),
+                //h("div.menu", 
+                    [
+                    h("div.menu-selected", displayInputType(s.inputType)),
+                    h("div.menu-options", 
+                        ["asy", "tex"].map(name => 
+                            h("div.menu-option", {
+                                on: { click: () => onInputTypeChange(name as InputType) }
+                            }, displayInputType(name as InputType))
+                        )
+                    ),
+                ]
+               // ),
+            ]),
+
+            h("button.btn.autoEval", {
+                class: { active: doAutoEval },
+                on: { click: toggleAutoEval },
+            }, [
+                doAutoEval ? icon.render(icon.Watch) : icon.render(icon.Unwatch),
+                "Auto-eval"
+            ]),
+            h("button#start-demo.btn", { on: { click: startDemo } }, [icon.render(icon.Gift), "Demo!"]),
+
+        ]),
+
+        status === "network-err" && h("pre#network-err", s.errorMessage),
+        status === "err" && [
+              h("p", "Compiler errors:"),
+              h("pre#compiler-error", {
+                      on: {
+                          click: e => scroll(e.target),
+                          /*click: e => {
+                              const selection = window.getSelection();
+                              const range = docOneument.createRange();
+                              range.selectNodeContents(e.target);
+                              selection.removeAllRanges();
+                              selection.addRange(range);
+                          },*/
+                      },
+                  }, errorMessage),
+              h("p", [
+                "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial: ",
+                h("a", { props: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
+            ]),
+        ],
+
+        status == "ok" && h("div#output", {on: {click: (e: any) => scroll(e.target)}}, [
+            renderOutput(),
+            h("div#share-panel", [
+                h("button#save.btn", { class: {clicked: saveClicked}, on: { click: downloadOutput        } }, saveClicked && [icon.render(icon.Save), "Downloaded"] || [icon.render(icon.Save), "Download"]),
+                h("button#copy.btn", { class: {clicked: copyClicked}, on: { click: copyOutputToClipboard } }, copyClicked && [icon.render(icon.Copied), "Copied"]     || [icon.render(icon.Copy), "Copy"]    ),
+            ])
+        ])
+    ]);
+};
+
 // initialize ...
 
-const state: State = {
+const s: State = {
     code: "",
     inputType: localStorage.getItem("inputType") as InputType | null ?? "asy",
     outputType: localStorage.getItem("outputType") as OutputType | null ?? "svg",
@@ -599,20 +539,20 @@ const state: State = {
 
 const code = loadFromHash();
 if (code !== "") {
-    state.code = decodeURIComponent(code);
+    s.code = decodeURIComponent(code);
     saveLocalStorage();
 } else {
     const code = loadFromLocalStorage();
     if (code !== "") {
-        state.code = code;
+        s.code = code;
         saveHash();
     }
 }
 window.addEventListener("hashchange", () => {
     const code = loadFromHash();
-    if (state.code !== code) {
-        state.code = code;
-        if (state.doAutoEval) startAutoEval();
+    if (s.code !== code) {
+        s.code = code;
+        if (s.doAutoEval) startAutoEval();
         redraw();
     }
 });
@@ -630,7 +570,7 @@ const redraw = () => {
 
 redraw();
 
-if (state.doAutoEval) startAutoEval();
+if (s.doAutoEval) startAutoEval();
 startAutosave();
 
 // const textarea = document.getElementById('editor');
