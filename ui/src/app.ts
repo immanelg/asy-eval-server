@@ -1,7 +1,8 @@
 import "./styles.css";
 import * as icon from "./icons.ts";
-import { init, classModule, propsModule, styleModule, eventListenersModule, type VNode, fragment } from "snabbdom";
+import { init, classModule, propsModule, styleModule, attributesModule, eventListenersModule, type VNode, fragment } from "snabbdom";
 import { h } from "./h.ts";
+import { lex } from "./parser.ts";
 
 const env = import.meta.env;
 
@@ -327,9 +328,10 @@ const renderOutput = () => {
     case "pdf": return h("embed#output-impl", { style: {"min-height": "1150px"}, props: { src: s.pdfUrl, type: "application/pdf" } });
     }
 };
-const syHighlight = (code: string) => {
-    return code.replace(/(import|if|for)/g, '<span class="sy-kw">$1</span>');
-}
+
+const syHighlight = (code: string) => 
+    lex(code).map(token => h("span",  {attrs: {class: [`sy-${token.type}`] } }, token.value));
+window.hi = syHighlight;
 
 const editorTextareaInput = e => {
     s.code = e.target.value;
@@ -389,6 +391,8 @@ const renderEditor = (): VNode => {
             h("textarea.editor-textarea", {
                 props: {
                     value: code,
+                },
+                attrs: {
                     readonly: demoTimer !== null,
                     spellcheck: "false",
                 },
@@ -408,18 +412,16 @@ const renderEditor = (): VNode => {
                     create: (_, vnode) => {
                         editorContentRef = vnode.elm;
                     },
-                    insert: vnode => {
-                        vnode.elm.innerHTML = syHighlight(s.code);
-                    },
-                    update: (oldVnode: VNode, newVnode: VNode) => {
-                        if (oldVnode.elm.textContent !== s.code) {
-                            newVnode.elm.innerHTML = syHighlight(s.code);
-                        }
-                    },
+                     //insert: vnode => {
+                     //    vnode.elm.innerHTML = syHighlight(s.code);
+                     //},
+                     //update: (oldVnode: VNode, newVnode: VNode) => {
+                     //    if (oldVnode.elm.textContent !== s.code) {
+                     //        newVnode.elm.innerHTML = syHighlight(s.code);
+                     //    }
+                     //},
                 },
-            }, [
-
-                ]),
+            }, syHighlight(s.code)),
         ])
     )
 }
@@ -433,13 +435,13 @@ const render = (): VNode => {
     return h("div", [
         h("h1", {}, "Asymptote Evaluator"),
 
-        h("a", { props: { href: "https://github.com/immanelg/asy-eval-server" } }, "View the source on GitHub ⭐"),
+        h("a", { attrs: { href: "https://github.com/immanelg/asy-eval-server" } }, "View the source on GitHub ⭐"),
 
         renderEditor(),
 
         h("div#eval-panel", [
             h("button#send-eval.btn", {
-                props: { disabled: code.trim() === "" || status === "loading" },
+                attrs: { disabled: code.trim() === "" || status === "loading" },
                 on: { click: sendEval },
             }, status === "loading" && "Evaluating..." || [icon.render(icon.Run), "Evaluate"]),
 
@@ -504,7 +506,7 @@ const render = (): VNode => {
                   }, errorMessage),
               h("p", [
                 "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial: ",
-                h("a", { props: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
+                h("a", { attrs: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
             ]),
         ],
 
@@ -561,7 +563,7 @@ window.addEventListener("hashchange", () => {
     }
 });
 
-const patch = init([classModule, propsModule, styleModule, eventListenersModule]);
+const patch = init([classModule, propsModule, attributesModule, styleModule, eventListenersModule]);
 
 let vnode: VNode | null = null;
 

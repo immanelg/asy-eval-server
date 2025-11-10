@@ -182,9 +182,12 @@ textarea#editor:focus {
 /*     background-color: rgb(20 20 20); */
 /* } */
 /**/
-span.sy-kw {
+span.sy-Ident {
     /* font-weight: bold; */
-    color: hsl(2 48% 44%);
+    color: hsl(50 10% 60%);
+}
+span.sy-String {
+    color: hsl(50 40% 60%);
 }
 
 #output {
