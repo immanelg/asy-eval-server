@@ -260,7 +260,7 @@ const copyOutputToClipboard = async () => {
                 await navigator.clipboard.writeText(s.svgText!);
                 break;
             case "png":
-                navigator.clipboard.write([
+                await navigator.clipboard.write([
                     new ClipboardItem(
                         { [contentType()]: s.pngBlob! 
                     })
