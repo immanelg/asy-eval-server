@@ -7,7 +7,7 @@ import { lex } from "./parser.ts";
 const env = import.meta.env;
 
 const API_URL = env.VITE_API_URL;
-if (env.DEV) console.log(env);
+if (env.DEV) console.log("env:", JSON.stringify(env));
 
 type EvalStatus = null | "loading" | "ok" | "err" | "network-err";
 

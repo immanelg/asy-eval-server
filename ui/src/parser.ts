@@ -154,7 +154,7 @@ export function lex(s: string): Token[] {
             }
             tokens.push(token);
         } else {
-            console.debug("unhandled char (skipping)", s[i]);
+            console.debug("parser: unhandled char:", s[i]);
             let token: Token = {type: "None", value: s[i]};
             tokens.push(token);
             i++;
@@ -163,13 +163,13 @@ export function lex(s: string): Token[] {
     return tokens;
 }
 
-const test = `
-    int x_0 = 12;
-    import triangles;
-    string x = "quote:\"\""
-    if (x == 1) return "abcd";
-`;
+// const test = `
+//     int x_0 = 12;
+//     import triangles;
+//     string x = "quote:\"\""
+//     if (x == 1) return "abcd";
+// `;
 
-for (const token of lex(test)) 
-    console.log(token);
+// for (const token of lex(test)) 
+//     console.log(token);
 
