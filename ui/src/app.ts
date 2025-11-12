@@ -471,7 +471,7 @@ const render = (): VNode => {
             h("button#copy-url.btn", { 
                 on: { 
                     click: async () => {
-                        await navigator.clipboard.writeText(window.location.href);
+                        await navigator.clipboard.writeText(window.location.href+encodeURIComponent(s.code));
                         s.copyUrlClicked = true;
                         redraw();
                         setTimeout(() => {
