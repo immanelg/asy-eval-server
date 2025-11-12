@@ -31,7 +31,7 @@ type State = {
     status: EvalStatus;
     errorMessage: null | string;
 
-    doAutoEval: boolean;
+    enableAutoEval: boolean;
 
     copyClicked: boolean;
     saveClicked: boolean;
@@ -47,17 +47,15 @@ const displayInputType = (name: InputType) => ({
 
 
 const onEditorKeydown = e => {
-    const { key, ctrlKey, metaKey } = e;
-
     if (e.ctrlKey && e.key === "Enter" && s.code.trim() !== "") { 
         sendEval();
         // event.preventDefault();
-    } else if (key === 'Tab') {
+    } else if (e.key === 'Tab') {
         e.preventDefault();
         document.execCommand('insertText', false, '    ');
-    } else if (key === 'Backspace') {
+    } else if (e.key === 'Backspace') {
         // event.preventDefault();
-    } else if (key == "Enter") {
+    } else if (e.key == "Enter") {
         e.preventDefault()
           document.execCommand('insertLineBreak')
     }
@@ -66,7 +64,7 @@ const onEditorInput = e => {
     const changed = e.target.textContent || "";
     if (changed === s.code) return;  // input called second time after update() hook
     s.code = changed;
-    if (s.doAutoEval) startAutoEval();
+    if (s.enableAutoEval) startAutoEval();
     redraw();
 };
 const numlines = () => {
@@ -124,8 +122,7 @@ const startDemo = () => {
 };
 
 const contentType = () => {
-    const { outputType } = s;
-    switch (outputType) {
+    switch (s.outputType) {
         case "svg":
             return "image/svg+xml";
         case "png":
@@ -133,16 +130,16 @@ const contentType = () => {
         case "pdf":
             return "application/pdf";
         default:
-            throw new Error("invalid type " + outputType);
+            throw new Error("invalid type " + s.outputType);
     }
 };
 
 
 const toggleAutoEval = e => {
-    if (s.doAutoEval) cancelAutoEval();
+    if (s.enableAutoEval) cancelAutoEval();
     else startAutoEval();
-    s.doAutoEval = !s.doAutoEval;
-    localStorage.setItem("doAutoEval", s.doAutoEval);
+    s.enableAutoEval = !s.enableAutoEval;
+    localStorage.setItem("doAutoEval", s.enableAutoEval);
     redraw();
 };
 
@@ -166,10 +163,9 @@ const onInputTypeChange = (inputType: InputType) => {
 };
 
 const doEvalRequest = async () => {
-    const { inputType, outputType } = s;
     let response;
     try {
-        response = await fetch(`${API_URL}/eval?i=${inputType}&o=${outputType}`, {
+        response = await fetch(`${API_URL}/eval?i=${s.inputType}&o=${s.outputType}`, {
             method: "POST",
             headers: {
                 // Accept: contentType(),
@@ -178,12 +174,12 @@ const doEvalRequest = async () => {
         });
     } catch (exc) {
         s.status = "network-err";
-        s.errorMessage = `I caught an exception while performing an HTTP request.\n${exc}`;
+        s.errorMessage = `I caught an exception while performing an HTTP request:\n${exc}`;
         return;
     }
     if (!response.ok) {
         s.status = "network-err";
-        s.errorMessage = `HTTP request returned an error response. Status: ${response.status} ${await response.text() ?? ""}`;
+        s.errorMessage = `HTTP request returned an error response. Status: ${response.status}, Response: ${await response.text() ?? ""}`;
         return;
     }
 
@@ -195,7 +191,7 @@ const doEvalRequest = async () => {
     }
 
     s.status = "ok";
-    switch (outputType) {
+    switch (s.outputType) {
         case "svg":
             const svgText = await blob.text();
             s.svgText = svgText;
@@ -257,24 +253,23 @@ const downloadOutput = () => {
 const copyOutputToClipboard = async () => {
     s.copyClicked = true;
     redraw();
-    const { svgText, outputType, pngBlob, pdfBlob } = s;
 
     try {
-        switch (outputType) {
+        switch (s.outputType) {
             case "svg":
-                await navigator.clipboard.writeText(svgText!);
+                await navigator.clipboard.writeText(s.svgText!);
                 break;
             case "png":
                 navigator.clipboard.write([
                     new ClipboardItem(
-                        { [contentType()]: pdfBlob! 
+                        { [contentType()]: s.pdfBlob! 
                     })
                 ]);
                 break;
             case "pdf":
                 await navigator.clipboard.write([
                     new ClipboardItem(
-                        { [contentType()]: pdfBlob! 
+                        { [contentType()]: s.pdfBlob! 
                     })
                 ]);
                 break;
@@ -339,13 +334,14 @@ const renderOutput = () => {
 };
 
 const syHighlight = (code: string) => 
-    s.inputType === "asy" ?
-        tokenize(code).map(token => h("span",  {attrs: {class: [`sy-${token.type}`] } }, token.value))
-        : code;
+    tokenize(code, s.inputType)
+        .map(token => 
+            h("span",  {attrs: {class: [`sy-${token.type}`] } }, token.value))
+    ;
 
 const editorTextareaInput = e => {
     s.code = e.target.value;
-    if (s.doAutoEval) startAutoEval();
+    if (s.enableAutoEval) startAutoEval();
 
     editorSyncScroll(e.target);
     redraw();
@@ -377,12 +373,12 @@ const onHotkey = (e: KeyboardEvent) => {
     }
 };
 
-let editorContentRef = null;
-let gutterRef = null;
-const editorSyncScroll = (textarea) => {
-    editorContentRef.scrollTop = textarea.scrollTop;
-    editorContentRef.scrollLeft = textarea.scrollLeft ;
-    gutterRef.scrollTop = textarea.scrollTop;
+let editorContentRef: Element | null = null;
+let gutterRef: Element | null = null;
+const editorSyncScroll = (textarea: HTMLTextAreaElement) => {
+    editorContentRef!.scrollTop = textarea.scrollTop;
+    editorContentRef!.scrollLeft = textarea.scrollLeft ;
+    gutterRef!.scrollTop = textarea.scrollTop;
 }
 const gutter = () => {
     let length = s.code.split("").filter(c => c === "\n").length;
@@ -400,8 +396,8 @@ const renderEditor = (): VNode => {
         h("div.editor-inner", [
             h("div.editor-gutter", {
                     hook: {
-                        create: (_, vnode) => {
-                            gutterRef = vnode.elm;
+                        create: (_: VNode, vnode: VNode) => {
+                            gutterRef = vnode.elm as Element;
                         },
                     }
                 },
@@ -409,7 +405,7 @@ const renderEditor = (): VNode => {
             ),
             h("textarea.editor-textarea", {
                 props: {
-                    value: code,
+                    value: s.code,
                 },
                 attrs: {
                     readonly: s.demoing,
@@ -420,25 +416,15 @@ const renderEditor = (): VNode => {
                     input: editorTextareaInput,
                     keydown: onHotkey,
                     click: e => scroll(e.target),
-                    scroll: e => {
-                        editorSyncScroll(e.target);
-                    },
+                    scroll: e => editorSyncScroll(e.target),
                 },
 
             }),
             h("pre.editor-content", {
                 hook: {
-                    create: (_, vnode) => {
-                        editorContentRef = vnode.elm;
+                    create: (_: VNode, vnode: VNode) => { 
+                        editorContentRef = vnode.elm as Element; 
                     },
-                     //insert: vnode => {
-                     //    vnode.elm.innerHTML = syHighlight(s.code);
-                     //},
-                     //update: (oldVnode: VNode, newVnode: VNode) => {
-                     //    if (oldVnode.elm.textContent !== s.code) {
-                     //        newVnode.elm.innerHTML = syHighlight(s.code);
-                     //    }
-                     //},
                 },
             }, syHighlight(s.code)),
         ])
@@ -448,9 +434,6 @@ const renderEditor = (): VNode => {
 
 
 const render = (): VNode => {
-    const { code, status, errorMessage, 
-        copyClicked, saveClicked, doAutoEval } = s;
-
     return h("div", [
         h("h1", {}, "Asymptote Evaluator"),
 
@@ -460,15 +443,13 @@ const render = (): VNode => {
 
         h("div#eval-panel", [
             h("button#send-eval.btn", {
-                attrs: { disabled: code.trim() === "" || status === "loading" },
+                attrs: { disabled: s.code.trim() === "" || s.status === "loading" },
                 on: { click: sendEval },
-            }, status === "loading" && "Evaluating..." || [icon.render(icon.Run), "Evaluate"]),
+            }, s.status === "loading" && "Evaluating..." || icon.pair(icon.Run, "Evaluate")),
 
             h("div.btn.typeswitch", [
                 icon.render(icon.Read),
-                // h("div.menu", 
-
-                    [
+                [
                     h("div.menu-selected", h("span", s.outputType.toUpperCase())),
                     h("div.menu-options", 
                         ["svg", "png", "pdf"].map(name => 
@@ -478,13 +459,11 @@ const render = (): VNode => {
                         )
                     ),
                 ]
-                // ),
             ]),
 
             h("div.btn.typeswitch", [
                 icon.render(icon.Write),
-                //h("div.menu", 
-                    [
+                [
                     h("div.menu-selected", displayInputType(s.inputType)),
                     h("div.menu-options", 
                         ["asy", "tex"].map(name => 
@@ -494,46 +473,40 @@ const render = (): VNode => {
                         )
                     ),
                 ]
-               // ),
             ]),
 
             h("button.btn.autoEval", {
-                class: { active: doAutoEval },
+                class: { active: s.enableAutoEval },
                 on: { click: toggleAutoEval },
             }, [
-                doAutoEval ? icon.render(icon.Watch) : icon.render(icon.Unwatch),
+                icon.render(s.enableAutoEval ? icon.Watch : icon.Unwatch),
                 "Auto-eval"
             ]),
-            h("button#start-demo.btn", { on: { click: startDemo } }, [icon.render(icon.Gift), "Demo!"]),
+            h("button#start-demo.btn", { on: { click: startDemo } }, icon.pair(icon.Gift, "Demo!")),
 
         ]),
 
-        status === "network-err" && h("pre#network-err", s.errorMessage),
-        status === "err" && [
+        s.status === "network-err" && h("pre#network-err", s.errorMessage),
+        s.status === "err" && [
               h("p", "Compiler errors:"),
               h("pre#compiler-error", {
                       on: {
                           click: e => scroll(e.target),
-                          /*click: e => {
-                              const selection = window.getSelection();
-                              const range = docOneument.createRange();
-                              range.selectNodeContents(e.target);
-                              selection.removeAllRanges();
-                              selection.addRange(range);
-                          },*/
                       },
-                  }, errorMessage),
+                  }, s.errorMessage),
               h("p", [
                 "You are really bad at this, aren't you? Can you even draw a square? Here's some random tutorial: ",
                 h("a", { attrs: { href: "https://asymptote.sourceforge.io/asymptote_tutorial.pdf" } }, "Tutorial."),
             ]),
         ],
 
-        status == "ok" && h("div#output", {on: {click: (e: any) => scroll(e.target)}}, [
+        s.status == "ok" && h("div#output", {on: {click: (e: any) => scroll(e.target)}}, [
             renderOutput(),
             h("div#share-panel", [
-                h("button#save.btn", { class: {clicked: saveClicked}, on: { click: downloadOutput        } }, saveClicked && [icon.render(icon.Save), "Downloaded"] || [icon.render(icon.Save), "Download"]),
-                h("button#copy.btn", { class: {clicked: copyClicked}, on: { click: copyOutputToClipboard } }, copyClicked && [icon.render(icon.Copied), "Copied"]     || [icon.render(icon.Copy), "Copy"]    ),
+                h("button#save.btn", { class: {clicked: s.saveClicked}, on: { click: downloadOutput        } }, 
+                    s.saveClicked ? icon.pair(icon.Save, "Downloaded") : icon.pair(icon.Save, "Download")),
+                h("button#copy.btn", { class: {clicked: s.copyClicked}, on: { click: copyOutputToClipboard } }, 
+                    s.copyClicked ? icon.pair(icon.Copied, "Copied")   : icon.pair(icon.Copy, "Copy")),
             ])
         ])
     ]);
@@ -555,11 +528,13 @@ const s: State = {
     status: null,
     errorMessage: null,
 
-    doAutoEval: JSON.parse(localStorage.getItem("doAutoEval")) as boolean | null ?? true,
+    enableAutoEval: JSON.parse(localStorage.getItem("doAutoEval")) as boolean | null ?? true,
 
     copyClicked: false,
     saveClicked: false,
     demoing: false,
+
+    cursorPosition: 0,
 };
 
 const code = loadFromHash();
@@ -577,7 +552,7 @@ window.addEventListener("hashchange", () => {
     const code = loadFromHash();
     if (s.code !== code) {
         s.code = code;
-        if (s.doAutoEval) startAutoEval();
+        if (s.enableAutoEval) startAutoEval();
         redraw();
     }
 });
@@ -587,7 +562,7 @@ const patch = init([classModule, propsModule, attributesModule, styleModule, eve
 let vnode: VNode | null = null;
 
 const redraw = () => {
-    if (false && env.DEV) console.count("redraw");
+    if (env.DEV) { console.count("redraw"); console.log(s); }
     vnode = patch(vnode || document.getElementById("app")!, render());
 };
 
@@ -595,8 +570,5 @@ const redraw = () => {
 
 redraw();
 
-if (s.doAutoEval) startAutoEval();
+if (s.enableAutoEval) startAutoEval();
 startAutosave();
-
-// const textarea = document.getElementById('editor');
-// if (textarea) textarea.focus();

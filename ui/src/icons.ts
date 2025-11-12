@@ -13,6 +13,6 @@ import { h } from "./h.ts";
 export function render(icon: string) {
     return h("img.inline-icon", { props: { src: icon } });
 }
-export function iconed(icon: string, and: any) { 
+export function pair(icon: string, and: any) { 
     return [render(icon), and] 
 }

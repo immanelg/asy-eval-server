@@ -94,7 +94,8 @@ const iskeyword = (word: string): boolean => keywordSet.has(word);
 // - split by \n (will be necessary for highlighting current line in editor because we need to split editor into line divs)
 // - maybe add Call "token" if Ident is followed by (.
 
-export function tokenize(s: string, lang: "asy" = "asy"): Token[] {
+export function tokenize(s: string, lang: "asy" | "tex" = "asy"): Token[] {
+    if (lang !== "asy") return [{type: "None", value: s}];
     const eof = i => i > s.length-1;
     let i = 0;
     let line = 1;
@@ -167,7 +168,7 @@ export function tokenize(s: string, lang: "asy" = "asy"): Token[] {
             }
             tokens.push(token);
         } else {
-            console.debug("parser: unhandled char:", s[i]);
+            // console.debug("parser: unhandled char:", s[i]);
             let token: Token = {type: "None", value: s[i]};
             tokens.push(token);
             i++;
