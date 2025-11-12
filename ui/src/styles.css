@@ -173,9 +173,9 @@ span.sy-Number {
     position: relative;
 
     /* image */
-    display: grid;
-    place-items: center;
     & #output-impl {
+        display: grid;
+        place-items: center;
         width: 100%;
         min-height: 400px;
     }
