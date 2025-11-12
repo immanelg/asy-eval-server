@@ -333,6 +333,7 @@ const startAutoEval = () => {
 };
 
 const renderOutput = () => {
+    s.copyClicked = s.saveClicked = false;
     switch (s.outputType) {
     case "svg": return h("div#output-impl", { props: { innerHTML: s.svgText } });
     case "png": return h("img#output-impl", { props: { src: s.pngUrl } });
