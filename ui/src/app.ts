@@ -350,17 +350,26 @@ const editorTextareaInput = e => {
 const onHotkey = (e: KeyboardEvent) => {
     const el = e.target as HTMLTextAreaElement;
     if (e.ctrlKey && e.key === "Enter" && s.code.trim() !== "") sendEval();
-    // TODO: indent on Enter
+    else if (e.key == 'Enter') {
+        //TODO: add indent
+    }
     else if (e.key == "Escape") el.blur();
     else if (e.key == 'Tab') {
         e.preventDefault();
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
+        document.execCommand('insertText', false, '    '); // muh deprecated need to updoot
+        return;
+        // // i have no idea why this is broken.
+        // const start = el.selectionStart;
+        // const end = el.selectionEnd;
+        // const position = start + 4;
+        // console.log("range:", start, end);
 
-        el.value = el.value.substring(0, start) + "    " + el.value.substring(end);
+        // s.code = s.code.substring(0, start) + "    " + s.code.substring(end);
+        // console.log("code1", s.code);
 
-        el.selectionStart = el.selectionEnd = start + 4;
-        redraw()
+        // el.selectionStart = el.selectionEnd = position;
+        // redraw();
+        // console.log("code2", s.code);
     }
 };
 
