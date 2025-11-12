@@ -262,7 +262,7 @@ const copyOutputToClipboard = async () => {
             case "png":
                 navigator.clipboard.write([
                     new ClipboardItem(
-                        { [contentType()]: s.pdfBlob! 
+                        { [contentType()]: s.pngBlob! 
                     })
                 ]);
                 break;
