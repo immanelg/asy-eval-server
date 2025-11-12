@@ -71,17 +71,29 @@ const isident = (c: string): boolean => {
         || char > 64 && char < 91 
         || char > 96 && char < 123;
 }
-const isspace = (c: string): boolean => {
-    return c === " " || c === "\n" || c === "\r" || c === "\t";
-}
-const ispunc = (c: string): boolean => {
-    return c === "(" || c === ")" 
+const isspace = (c: string): boolean => 
+    c === " " || c === "\n" || c === "\r" || c === "\t";
+const ispunc = (c: string): boolean => 
+    c === "(" || c === ")" 
         || c === "=" || c === ";" 
         || c === "{" || c === "}"
         || c === "*" || c === "+"
         || c === "," || c === "." || c === ":" 
     ;
-}
+
+const keywordSet = new Set([
+    "and", "controls", "tension", "atleast", "curl", "if", "else", "while", "for",
+    "do", "return", "break", "continue", "struct", "typedef", "new", "access", "import",
+    "unravel", "from", "include", "quote", "static", "public", "private", "restricted",
+    "this", "explicit", "operator",
+]);
+const iskeyword = (word: string): boolean => keywordSet.has(word);
+
+// TODO: normalize token stream. 
+// - merge parts into one. 
+// - split by \n (will be necessary for highlighting current line in editor because we need to split editor into line divs)
+// - maybe add Call "token" if Ident is followed by (.
+
 export function lex(s: string): Token[] {
     const eof = i => i > s.length-1;
     let i = 0;
@@ -134,6 +146,7 @@ export function lex(s: string): Token[] {
                 token.value += s[i];
                 i++;
             }
+            if (iskeyword(token.value)) token.type = "Keyword";
             tokens.push(token);
         } else if (isnum(s[i])) {
             let token: Token= {type: "Number", value: ""};

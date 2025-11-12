@@ -24,7 +24,7 @@ body {
 }
 
 ::selection {
-    background-color: hsla(123, 24%, 40.78%, 0.78);
+    background-color: hsla(122, 25%, 39%, 0.7);
 }
 
 a:visited {
@@ -182,12 +182,18 @@ textarea#editor:focus {
 /*     background-color: rgb(20 20 20); */
 /* } */
 /**/
+span.sy-Keyword {
+    color: hsl(12 65% 59%);
+}
 span.sy-Ident {
     /* font-weight: bold; */
-    color: hsl(50 10% 60%);
+    color: hsl(47 10% 62%);
 }
 span.sy-String {
-    color: hsl(50 40% 60%);
+    color: hsl(65 50% 60%);
+}
+span.sy-Number {
+    color: hsl(166 21% 58%);
 }
 
 #output {
@@ -268,6 +274,7 @@ span.sy-String {
 
     cursor: pointer;
 
+    user-select: none;
 }
 
 .btn, #output {
