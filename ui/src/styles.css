@@ -24,7 +24,7 @@ body {
 }
 
 ::selection {
-    background-color: hsla(122, 25%, 39%, 0.7);
+    background-color: hsla(122, 50%, 80%, 0.2);
 }
 
 a:visited {
