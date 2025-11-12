@@ -120,7 +120,7 @@ const startDemo = () => {
             }
         };
         next();
-    }, 0);
+    }, 20);
 };
 
 const contentType = () => {
@@ -292,8 +292,7 @@ const cancelAutosave = () => {
 };
 const startAutosave = () =>
     setInterval(() => {
-        saveHash();
-        saveLocalStorage();
+        saveState();
     }, autosaveMs);
 
 let autoEvalTimer: TimerJob | null;
@@ -311,21 +310,6 @@ const startAutoEval = () => {
         sendEval();
     }, autoEvalDelay);
 };
-
-const saveHash = () => {
-    window.location.hash = encodeURIComponent(s.code);
-};
-const saveLocalStorage = () => {
-    localStorage.setItem("code", s.code);
-};
-
-const loadFromHash = () => {
-    const hash = window.location.hash.substring(1);
-    if (!hash) return "";
-    const code = decodeURIComponent(hash);
-    return code;
-};
-const loadFromLocalStorage = () => localStorage.getItem("code") || "";
 
 const renderOutput = () => {
     switch (s.outputType) {
@@ -529,49 +513,61 @@ const render = (): VNode => {
 
 // initialize ...
 
-const s: State = {
-    code: "",
-    inputType: localStorage.getItem("inputType") as InputType | null ?? "asy",
-    outputType: localStorage.getItem("outputType") as OutputType | null ?? "svg",
-
-    svgText: null,
-    pngUrl: null,
-    pngBlob: null,
-    pdfUrl: null,
-    pdfBlob: null,
-
-    status: null,
-    errorMessage: null,
-
-    enableAutoEval: JSON.parse(localStorage.getItem("doAutoEval")) as boolean | null ?? true,
-
-    copyClicked: false,
-    saveClicked: false,
-    demoing: false,
-
-    cursorPosition: 0,
+const saveState = () => {
+    localStorage.setItem("state", JSON.stringify(s));
 };
 
-const code = loadFromHash();
-if (code !== "") {
-    s.code = decodeURIComponent(code);
-    saveLocalStorage();
-} else {
-    const code = loadFromLocalStorage();
-    if (code !== "") {
-        s.code = code;
-        saveHash();
-    }
-}
-window.addEventListener("hashchange", () => {
-    const code = loadFromHash();
-    if (s.code !== code) {
-        s.code = code;
-        if (s.enableAutoEval) startAutoEval();
-        redraw();
-    }
-});
+const decodeHash = (): string | null => {
+    const hash = window.location.hash.substring(1);
+    if (!hash) return null;
+    const code = decodeURIComponent(hash) || null;
+    return code;
+};
 
+const loadState = () => {
+    let defaults: State = {
+        code: "",
+        inputType: "asy",
+        outputType: "svg",
+
+        svgText: null,
+        pngUrl: null,
+        pngBlob: null,
+        pdfUrl: null,
+        pdfBlob: null,
+
+        status: null,
+        errorMessage: null,
+
+        enableAutoEval: true,
+
+        copyUrlClicked: false,
+        copyClicked: false,
+        saveClicked: false,
+
+        demoing: false,
+
+        cursorPosition: 0,
+    };
+
+    const codeFromHash = decodeHash();
+    const fromUrl = codeFromHash ? { code: codeFromHash } : {};
+
+    const saved = JSON.parse(localStorage.getItem("state") as any) || {};
+    return { ...defaults, ...saved, ...fromUrl };
+}
+
+const s = loadState();
+
+// window.addEventListener("hashchange", () => {
+//     const code = decodeHash();
+//     if (s.code !== code) {
+//         s.code = code;
+//         if (s.enableAutoEval) startAutoEval();
+//         redraw();
+//     }
+// });
+// 
 const patch = init([classModule, propsModule, attributesModule, styleModule, eventListenersModule]);
 
 let vnode: VNode | null = null;
@@ -587,3 +583,5 @@ redraw();
 
 if (s.enableAutoEval) startAutoEval();
 startAutosave();
+
+
