@@ -94,7 +94,7 @@ const iskeyword = (word: string): boolean => keywordSet.has(word);
 // - split by \n (will be necessary for highlighting current line in editor because we need to split editor into line divs)
 // - maybe add Call "token" if Ident is followed by (.
 
-export function lex(s: string): Token[] {
+export function tokenize(s: string, lang: "asy" = "asy"): Token[] {
     const eof = i => i > s.length-1;
     let i = 0;
     let line = 1;

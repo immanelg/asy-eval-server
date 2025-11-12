@@ -2,7 +2,7 @@ import "./styles.css";
 import * as icon from "./icons.ts";
 import { init, classModule, propsModule, styleModule, attributesModule, eventListenersModule, type VNode, fragment } from "snabbdom";
 import { h } from "./h.ts";
-import { lex } from "./parser.ts";
+import { tokenize } from "./parser.ts";
 
 const env = import.meta.env;
 
@@ -335,8 +335,9 @@ const renderOutput = () => {
 };
 
 const syHighlight = (code: string) => 
-    lex(code).map(token => h("span",  {attrs: {class: [`sy-${token.type}`] } }, token.value));
-window.hi = syHighlight;
+    s.inputType === "asy" ?
+        tokenize(code).map(token => h("span",  {attrs: {class: [`sy-${token.type}`] } }, token.value))
+        : code;
 
 const editorTextareaInput = e => {
     s.code = e.target.value;
