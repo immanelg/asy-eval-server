@@ -367,8 +367,7 @@ const editorSyncScroll = (textarea: HTMLTextAreaElement) => {
     gutterRef!.scrollTop = textarea.scrollTop;
 }
 const gutter = () => {
-    let length = s.code.split("").filter(c => c === "\n").length;
-    length++; // current line
+    let length = s.code.split("\n").length;
     length++; // eob
     return Array.from({length}, (_, i) => i < length-1 ? 
         h("div.editor-lnr", { key: i }, `${i+1}`)
