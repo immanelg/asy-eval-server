@@ -88,12 +88,19 @@ let demoTimer: TimerJob | null = null;
 let demoCodeIdx = 0;
 const demos: Record<InputType, string> = {
     asy: `\
-import three;
-size(10cm, 0);
-currentlight = light(diffuse = new pen[] {blue, green},
-specular = new pen[] {black, white},
-position = new triple[] {-Y+Z, X+Y});
-draw(unitsphere, surfacepen=white);`,
+size(10cm,0);
+path a,b,c;
+a = shift(1,0)*scale(2)*unitcircle;
+b = rotate(120)*a;
+c = rotate(120)*b;
+fill(a, red);
+fill(b, green);
+fill(c, blue);
+fill(buildcycle(a,b), red + green);
+fill(buildcycle(b,c), green + blue);
+fill(buildcycle(c,a), blue + red);
+fill(buildcycle(a,b,c), white);
+draw(a^^b^^c);`,
 
     tex: `\
 \\documentclass{article}
