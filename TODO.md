@@ -2,8 +2,6 @@
 - use actual grammar in parser, add all keywords and punctuation instead of only some, and refactor some code in it. 
    merge tokens, dont shit objects.
 - parser: floats
-- revokes for object urls
-- s.code.split('\n').length
 ---
 - unify blobs into one
 - qr code sharing
