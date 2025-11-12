@@ -351,9 +351,10 @@ const onHotkey = (e: KeyboardEvent) => {
         const start = el.selectionStart;
         const end = el.selectionEnd;
 
-        el.value = el.value.substring(0, start) + "\t" + el.value.substring(end);
+        el.value = el.value.substring(0, start) + "    " + el.value.substring(end);
 
-        el.selectionStart = el.selectionEnd = start + 1;
+        el.selectionStart = el.selectionEnd = start + 4;
+        redraw()
     }
 };
 
