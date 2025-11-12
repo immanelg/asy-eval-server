@@ -86,23 +86,36 @@ const scroll = (el: string | any) => {
 type TimerJob = number;
 let demoTimer: TimerJob | null = null;
 let demoCodeIdx = 0;
-const demoCode = `\
+const demos: Record<InputType, string> = {
+    asy: `\
 import three;
 size(10cm, 0);
 currentlight = light(diffuse = new pen[] {blue, green},
 specular = new pen[] {black, white},
 position = new triple[] {-Y+Z, X+Y});
-draw(unitsphere, surfacepen=white);`;
+draw(unitsphere, surfacepen=white);`,
+
+    tex: `\
+\\documentclass{article}
+\\usepackage[paperwidth=8cm, paperheight=2cm, margin=2mm]{geometry}
+\\usepackage{amsmath}
+\\usepackage[active,tightpage]{preview}
+\\begin{document}
+\\begin{preview}
+\\Huge $Q(z) = \\sum q_n z^n/n!$
+\\end{preview}
+\\end{document}`,
+}
 
 const startDemo = () => {
     scroll(".editor");
 
     cancelAutoEval();
     demoTimer = setTimeout(() => {
+        const demoCode = demos[s.inputType] as string;
         demoCodeIdx = 0;
         s.demoing = true;
         s.code = "";
-        s.inputType = "asy";
         s.outputType = "svg";
         redraw();
         const next = () => {
@@ -116,7 +129,8 @@ const startDemo = () => {
                 demoTimer = null;
                 s.demoing = false;
                 redraw();
-                (document.querySelector("#send-eval") as HTMLButtonElement).click();
+                sendEval();
+                // (document.querySelector("#send-eval") as HTMLButtonElement).click();
             }
         };
         next();
@@ -426,7 +440,7 @@ const render = (): VNode => {
 
         renderEditor(),
 
-        h("div#eval-panel", [
+        !s.demoing && h("div#eval-panel", [
             h("button#send-eval.btn", {
                 attrs: { disabled: s.code.trim() === "" || s.status === "loading" },
                 on: { click: sendEval },
