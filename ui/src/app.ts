@@ -33,6 +33,8 @@ type State = {
 
     enableAutoEval: boolean;
 
+    copyUrlClicked: boolean;
+
     copyClicked: boolean;
     saveClicked: boolean;
 
@@ -483,6 +485,19 @@ const render = (): VNode => {
                 "Auto-eval"
             ]),
             h("button#start-demo.btn", { on: { click: startDemo } }, icon.pair(icon.Gift, "Demo!")),
+            h("button#copy-url.btn", { 
+                on: { 
+                    click: async () => {
+                        await navigator.clipboard.writeText(window.location.href);
+                        s.copyUrlClicked = true;
+                        redraw();
+                        setTimeout(() => {
+                            s.copyUrlClicked = false;
+                            redraw();
+                        }, 2000); 
+                    },
+                } 
+            }, s.copyUrlClicked ? icon.pair(icon.Copied, "Copied!") : icon.pair(icon.Copy, "Share URL")),
 
         ]),
 
