@@ -162,7 +162,6 @@ const toggleAutoEval = e => {
     if (s.enableAutoEval) cancelAutoEval();
     else startAutoEval();
     s.enableAutoEval = !s.enableAutoEval;
-    localStorage.setItem("doAutoEval", s.enableAutoEval);
     redraw();
 };
 const clearBlobUrls = () => {
@@ -174,12 +173,10 @@ const clearBlobUrls = () => {
 
 const onOuputTypeChange = (outputType: OutputType) => {
     s.outputType = outputType;
-    localStorage.setItem("outputType", s.outputType);
     sendEval();
 };
 const onInputTypeChange = (inputType: InputType) => {
     s.inputType = inputType;
-    localStorage.setItem("inputType", s.inputType);
     
     sendEval();
 };
