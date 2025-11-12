@@ -40,7 +40,11 @@ type State = {
 };
 
 
-const displayInputType = (name: InputType) => { switch (name) { case "tex": return "LaTeX"; case "asy": return "Asymptote"} }
+const displayInputType = (name: InputType) => ({
+    tex: "LaTeX",
+    asy: "Asymptote",
+}[name]);
+
 
 const onEditorKeydown = e => {
     const { key, ctrlKey, metaKey } = e;
