@@ -108,12 +108,17 @@ export function tokenize(s: string, lang: "asy" | "tex" = "asy"): Token[] {
             token.value += s[i];
             i++;
             while (!eof(i) && s[i] !== "'") {
+                if (s[i] === '\\' && !eof(i + 1)) {
+                    token.value += s[i];
+                    i++;
+                    if (!eof(i)) {
+                        token.value += s[i];
+                        i++;
+                    }
+                    continue;
+                }
                 token.value += s[i];
                 i++;
-                if (!eof(i) && s[i-1] === "\\" && s[i] === "'") {
-                    token.value += s[i+1];
-                    i++
-                }
             }
             if (!eof(i)) { 
                 token.value += s[i];
@@ -127,12 +132,17 @@ export function tokenize(s: string, lang: "asy" | "tex" = "asy"): Token[] {
             token.value += s[i];
             i++;
             while (!eof(i) && s[i] !== '"') {
+                if (s[i] === '\\' && !eof(i + 1)) {
+                    token.value += s[i];
+                    i++;
+                    if (!eof(i)) {
+                        token.value += s[i];
+                        i++;
+                    }
+                    continue;
+                }
                 token.value += s[i];
                 i++;
-                if (!eof(i) && s[i-1] === "\\" && s[i] === '"') {
-                    token.value += s[i+1];
-                    i++
-                }
             }
             if (!eof(i)) { 
                 token.value += s[i];
