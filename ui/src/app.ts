@@ -379,7 +379,6 @@ const editorSyncScroll = (textarea) => {
     editorContentRef.scrollTop = textarea.scrollTop;
     editorContentRef.scrollLeft = textarea.scrollLeft ;
     gutterRef.scrollTop = textarea.scrollTop;
-    gutterRef.scrollLeft = textarea.scrollLeft ;
 }
 const gutter = () => {
     let length = s.code.split("").filter(c => c === "\n").length;
