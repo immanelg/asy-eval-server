@@ -99,7 +99,7 @@ func userSessionMiddleware(next http.Handler) http.Handler {
                 Name: "session",
                 Value: token,
                 MaxAge: sessionCookiesMaxAgeSeconds,
-                Secure: false,
+                Secure: true,
                 HttpOnly: true,
                 SameSite: http.SameSiteLaxMode,
             }
