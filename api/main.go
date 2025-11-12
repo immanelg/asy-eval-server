@@ -126,7 +126,6 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
                 w.Write([]byte("Command timed out!\n"))
                 return
             }
-            slogger.WarnContext(r.Context(), "exec error", "error", err)
             // TODO: maybe parse errors to json server side
             w.Header().Add("Content-Type", compilerErrorMimeType)
             w.WriteHeader(200)
