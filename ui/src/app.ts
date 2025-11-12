@@ -35,6 +35,8 @@ type State = {
 
     copyClicked: boolean;
     saveClicked: boolean;
+
+    demoing: boolean;
 };
 
 
@@ -89,11 +91,12 @@ position = new triple[] {-Y+Z, X+Y});
 draw(unitsphere, surfacepen=white);`;
 
 const startDemo = () => {
-    scroll("#editor");
+    scroll(".editor");
 
     cancelAutoEval();
     demoTimer = setTimeout(() => {
         demoCodeIdx = 0;
+        s.demoing = true;
         s.code = "";
         s.inputType = "asy";
         s.outputType = "svg";
@@ -107,6 +110,8 @@ const startDemo = () => {
                 demoTimer = setTimeout(next, delay);
             } else {
                 demoTimer = null;
+                s.demoing = false;
+                redraw();
                 (document.querySelector("#send-eval") as HTMLButtonElement).click();
             }
         };
@@ -394,7 +399,7 @@ const renderEditor = (): VNode => {
                     value: code,
                 },
                 attrs: {
-                    readonly: demoTimer !== null,
+                    readonly: s.demoing,
                     spellcheck: "false",
                 },
                 class: { [s.status as string]: true },
@@ -541,7 +546,7 @@ const s: State = {
 
     copyClicked: false,
     saveClicked: false,
-        cursorPosition: 0,
+    demoing: false,
 };
 
 const code = loadFromHash();
