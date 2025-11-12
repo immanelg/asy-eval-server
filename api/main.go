@@ -47,8 +47,6 @@ func handleCompilation(w http.ResponseWriter, r *http.Request) {
         return
     }
     slogger.DebugContext(r.Context(), "user dir", "path", dir)
-    defer os.RemoveAll(dir)
-
     var base = "input."
     var inputName = base + iext
     var outputName = base + oext
