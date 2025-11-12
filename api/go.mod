@@ -1,4 +1,4 @@
-module github.com/immanelg/asy-dumb-server
+module github.com/immanelg/asy-dumb-server/api
 
 go 1.24.0
 
