@@ -421,7 +421,7 @@ const renderEditor = (): VNode => {
                     },
                 },
 
-            }, s.code),
+            }),
             h("pre.editor-content", {
                 hook: {
                     create: (_, vnode) => {
