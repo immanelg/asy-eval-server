@@ -165,16 +165,15 @@ const toggleAutoEval = e => {
     localStorage.setItem("doAutoEval", s.enableAutoEval);
     redraw();
 };
+const clearBlobUrls = () => {
+    s.pngUrl && URL.revokeObjectURL(s.pngUrl);
+    s.pngUrl = null;
+    s.pdfUrl && URL.revokeObjectURL(s.pdfUrl);
+    s.pdfUrl = null;
+}
 
 const onOuputTypeChange = (outputType: OutputType) => {
     s.outputType = outputType;
-    if (s.outputType === "png") {
-        s.pngUrl && URL.revokeObjectURL(s.pngUrl);
-        s.pngUrl = null;
-    } else if (s.outputType === "pdf" && s.pngUrl) {
-        s.pdfUrl && URL.revokeObjectURL(s.pdfUrl);
-        s.pdfUrl = null;
-    }
     localStorage.setItem("outputType", s.outputType);
     sendEval();
 };
@@ -239,6 +238,8 @@ const sendEval = async () => {
     s.status = "loading" as EvalStatus;
     s.errorMessage = null;
     redraw();
+
+    clearBlobUrls();
 
     await doEvalRequest();
     redraw();
